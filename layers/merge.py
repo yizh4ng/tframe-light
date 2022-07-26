@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tframev2.layers.layer import Layer
+from tframe.layers.layer import Layer
 
 
 
@@ -120,5 +120,5 @@ class Merge(Layer):
     return Merge(cls.HIGHWAY, **kwargs)
 
   @property
-  def trainable_parameters(self):
+  def trainable_variables(self):
     return  self._trainable_parameters

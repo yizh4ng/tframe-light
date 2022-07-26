@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tframev2.layers.layer import Layer
+from tframe.layers.layer import Layer
 
 
 def single_input(_link):

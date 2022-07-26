@@ -2,8 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tframev2.core import Function
-from tframev2.layers.common import single_input
+from tframe.core import Function
+from tframe.layers.common import single_input
 
 
 class Net(Function):
@@ -85,6 +85,7 @@ class Net(Function):
   def trainable_variables(self):
     trainalbe_variables = []
     for f in self.children:
+      # print(f)
       assert hasattr(f, 'trainable_variables')
       trainalbe_variables.extend(f.trainable_variables)
     return trainalbe_variables

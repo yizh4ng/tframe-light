@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tframev2.layers.layer import Layer
-from tframev2.layers.common import single_input
+from tframe.layers.layer import Layer
+from tframe.layers.common import single_input
 
 
 

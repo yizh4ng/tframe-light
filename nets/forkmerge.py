@@ -5,10 +5,10 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-from tframev2.core.function import Function
-from tframev2.layers.layer import Layer
-from tframev2.layers.merge import Merge
-from tframev2.nets.net import Net
+from tframe.core.function import Function
+from tframe.layers.layer import Layer
+from tframe.layers.merge import Merge
+from tframe.nets.net import Net
 
 
 class ForkMergeDAG(Net):

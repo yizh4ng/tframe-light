@@ -1,4 +1,4 @@
-from tframev2.core.function import Function
+from tframe.core.function import Function
 
 
 
