@@ -48,12 +48,13 @@ def check_path(*paths, create_path=True, is_file_path=False):
   return path
 
 
-def clear_paths(paths):
+def clear_paths(paths, verbose=False):
   if len(paths) == 0: return
   if isinstance(paths, six.string_types):
     paths = [paths]
 
-  console.show_status('Cleaning path ...')
+  if verbose:
+    console.show_status('Cleaning path ...')
   for path in paths:
     # Delete all files in path
     for root, dirs, files in os.walk(path, topdown=False):
@@ -63,9 +64,9 @@ def clear_paths(paths):
       # Delete files
       for file in files:
         os.remove(os.path.join(root, file))
-
     # Show status
-    console.supplement('Directory "{}" has been cleared'.format(path))
+    if verbose:
+      console.supplement('Directory "{}" has been cleared'.format(path))
 
 
 def load_checkpoint(path, session, saver):

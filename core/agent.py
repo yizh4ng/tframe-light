@@ -2,7 +2,8 @@ import tensorflow as tf
 import os, sys
 import re
 from tframe import console
-from tframe.utils.local import check_path
+from tframe.utils.local import check_path, clear_paths
+import shutil
 
 
 class Agent(object):
@@ -35,7 +36,7 @@ class Agent(object):
                       self._model.mark)
 
 
-  def config_dir(self, dir_depth=2):
+  def config_dir(self, dir_depth=1):
     """This method should be called only in XX_core.py module for setting
        default job_dir and data_dir.
     """
@@ -48,13 +49,13 @@ class Agent(object):
                       maxmium_number_to_save=2, suffix='.sav'):
     if len(self.saved_model_paths) >= maxmium_number_to_save:
       saved_model_to_delete = self.saved_model_paths.pop(0)
-      os.remove(saved_model_to_delete)
-
+      shutil.rmtree(saved_model_to_delete)
     file_name = 'model{}-c{}{}'.format(mark, counter, suffix)
 
     path =check_path(self.ckpt_dir, file_name)
 
     model.save(path)
+    self.saved_model_paths.append(path)
 
 
 

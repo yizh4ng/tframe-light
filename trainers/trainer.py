@@ -212,7 +212,9 @@ class Trainer():
 
     if self.th.save_model:
       if self.model.metrics[0].record_appears:
-        console.show_status('Record appears, saving the model.',
+        console.show_status('Record appears, saving the model to {}'.format(
+          self.agent.ckpt_dir
+        ),
                             symbol='[Saving]')
         self.agent.save_model(self.model.keras_model,
                                       self.counter, self.model.mark)
