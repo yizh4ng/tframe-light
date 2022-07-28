@@ -166,6 +166,9 @@ class Trainer():
 
   def _outer_loop(self):
     self.counter = 0
+    self.model.build(self.th.input_shape)
+    console.show_status('Model built.')
+    self.model.keras_model.summary()
     rnd = 0
     for _ in range(self.th.total_outer_loops): #TODO: epcoh num
       rnd += 1
@@ -211,7 +214,7 @@ class Trainer():
       if self.model.metrics[0].record_appears:
         console.show_status('Record appears, saving the model.',
                             symbol='[Saving]')
-        self.agent.save_parameters(self.model.net.trainable_variables,
+        self.agent.save_model(self.model.keras_model,
                                       self.counter, self.model.mark)
       console.show_status('Record does not appear.',
                           symbol='[Saving]')
@@ -282,9 +285,9 @@ class Trainer():
       loss_dict['loss: {}'.format(self.model.loss.name)] = loss
       for metric in self.model.metrics:
         loss_dict['metric: {}'.format(metric.name)] = metric(prediction, target)
-    grads = tape.gradient(loss, self.model.net.trainable_variables)
+    grads = tape.gradient(loss, self.model.keras_model.trainable_variables)
     # print(len(self.model.net.trainable_variables))
-    self.optimizer.apply_gradients(zip(grads, self.model.net.trainable_variables))
+    self.optimizer.apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
     return loss_dict
 
   def validate_model(self, data_set:TFRData, batch_size=None, update_record=False):

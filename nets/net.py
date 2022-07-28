@@ -19,36 +19,18 @@ class Net(Function):
   # CONCAT = pedia.concat
   # RECURRENT = 'RECURRENT'
 
-  def __init__(self, name, level=0,  **kwargs):
+  def __init__(self, name,  **kwargs):
     """Instantiate Net, a name must be given
        TODO: deprecate inter_type
        :param level: level 0 indicates the trunk
        :param inter_type: \in {cascade, fork, sum, prod, concat}
     """
     self.name = name
-    self._level = level
-
-    self.input_ = None
-    self._output_scale = None
 
     self.children = []
-    self.branch_outputs = []
-    self.kwargs = kwargs
-
-    # Losses
-    self._extra_loss = None
-    # self._reg_loss = None
-
-    # Tensor extractor
-    self._tensor_extractors = []
-
-    self._output_slots = []
-
-  # region : Properties
 
   # region : Overrode Method
 
-  # TODO: modify with_logits mechanism
   def _link(self, *input, **kwargs):
     # region : Check inputs
     if len(input) == 1:
@@ -81,22 +63,3 @@ class Net(Function):
 
   def add(self, f):
     self.children.append(f)
-
-  @property
-  def trainable_variables(self):
-    _trainalbe_variables = []
-    for f in self.children:
-      _trainalbe_variables.extend(f.trainable_variables)
-    # print(len(_trainalbe_variables))
-    return _trainalbe_variables
-
-  @property
-  def total_parameters(self):
-    # for p in self.trainable_variables:
-    #   print(p.name, K.count_params(p))
-    #
-    return int( np.sum([K.count_params(p) for p in self.trainable_variables]))
-
-  def print_output_shape(self):
-    for f in self.children:
-      print(f.output_shape)

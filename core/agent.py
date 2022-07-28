@@ -44,7 +44,7 @@ class Agent(object):
     console.show_status('Job directory set to `{}`'.format(self.job_dir))
 
 
-  def save_parameters(self, paras, counter, mark,
+  def save_model(self, model, counter, mark,
                       maxmium_number_to_save=2, suffix='.sav'):
     if len(self.saved_model_paths) >= maxmium_number_to_save:
       saved_model_to_delete = self.saved_model_paths.pop(0)
@@ -54,9 +54,8 @@ class Agent(object):
 
     path =check_path(self.ckpt_dir, file_name)
 
+    model.save(path)
 
-    tf.saved_model.save(paras,
-                        path)
 
 
   def get_model_counter_from_name(self, path):
