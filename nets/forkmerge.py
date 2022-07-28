@@ -97,15 +97,15 @@ class ForkMergeDAG(Net):
       assert isinstance(self.edges, np.ndarray)
       self.adj_mat = self.edges.astype(dtype=np.bool)
 
-    # Check adjacent matrix
-    assert self.adj_mat.shape == mat_shape
-    assert np.allclose(self.adj_mat, np.triu(self.adj_mat))
-    if not all([
-      all([np.sum(self.adj_mat[:, j]) > 0 for j in range(1, mat_size)]),  # in
-      all([np.sum(self.adj_mat[i, :]) > 0 for i in range(mat_size - 1)]),
-      # out
-    ]): raise AssertionError('!! Adjacent matrix {} is illegal'.format(
-      self.adj_mat))
+    # # Check adjacent matrix
+    # assert self.adj_mat.shape == mat_shape
+    # assert np.allclose(self.adj_mat, np.triu(self.adj_mat))
+    # if not all([
+    #   all([np.sum(self.adj_mat[:, j]) > 0 for j in range(1, mat_size)]),  # in
+    #   all([np.sum(self.adj_mat[i, :]) > 0 for i in range(mat_size - 1)]),
+    #   # out
+    # ]): raise AssertionError('!! Adjacent matrix {} is illegal'.format(
+    #   self.adj_mat))
 
     # Check input projections, make sure self.input_projections is a list of
     #   layer list (may be empty), e.g., [[], [Conv], [], [], [Conv, Conv]]
@@ -164,13 +164,6 @@ class ForkMergeDAG(Net):
         # Set layers[0] as front vertices
         self._front_vertices.append(layers[0])
 
-      # Apply auto-merge logic if necessary
-      if len(input_tensors) > 1 and not isinstance(funcs[0], Merge):
-        if not self.auto_merge: raise ValueError(
-          '!! Multiple input tensors flow into non-merge layer')
-        merge_layer = Merge.Concat()
-        funcs.insert(0, merge_layer)
-
       # Take down predecessors for structure details
       predecessors = [fs[-1] for i, fs in enumerate(self.vertices)
                       if self.adj_mat[i + 1, j + 1]]
@@ -186,6 +179,10 @@ class ForkMergeDAG(Net):
       x = input_tensors
       for f in funcs:
         # Add funcs to children list for structure details
+        if isinstance(x, (list, tuple)):
+          if len(x) == 1:
+            x=x[0]
+
         self.add(f)
         # Call function
         x = f(x)

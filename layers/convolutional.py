@@ -4,7 +4,7 @@ from tframe.layers.common import single_input
 
 
 
-class Conv2d(Layer):
+class Conv2D(Layer):
 
   def __init__(self, *args, **kwargs):
     self.function = tf.keras.layers.Conv2D(*args, **kwargs)
