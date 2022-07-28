@@ -9,18 +9,41 @@ class Quantity():
   def __init__(self, name, smaller_is_better):
     self.name = name
     self._smaller_is_better = smaller_is_better
+    if self._smaller_is_better:
+      self.record = np.inf
+    else:
+      self.record = -np.inf
+    self._record_appears = False
 
   @property
   def smaller_is_better(self):
-    return self.smaller_is_better
+    return self._smaller_is_better
 
   @property
   def larger_is_better(self):
-    return not self.smaller_is_better
+    return not self._smaller_is_better
+
+  @property
+  def record_appears(self):
+    return self._record_appears
+
+  def try_set_record(self, value):
+    self._record_appears = False
+    if self.smaller_is_better:
+      if value < self.record:
+        self.record = value
+        self._record_appears = True
+    else:
+      if value > self.record:
+        self.record = value
+        self._record_appears = True
 
   def __call__(self, predictions, targets):
+    self._record_appears = False
     assert predictions.shape == targets.shape
-    return self.function(predictions, targets)
+    result = self.function(predictions, targets)
+    return result
+
 
   def function(self, predictions, targets):
     raise NotImplementedError

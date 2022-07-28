@@ -117,8 +117,21 @@ class Trainer():
 
   @staticmethod
   def _dict_to_string(dict_):
+    def is_float(num):
+      try:
+        float(num)
+        return True
+      except ValueError:
+        return False
+
     assert isinstance(dict_, dict)
-    string_array = ['{} = {:.3f}'.format(k, v) for k, v in dict_.items()]
+    string_array = []
+    for k, v in dict_.items():
+      if is_float(v):
+        string_array.append('{} = {:.3f}'.format(k, float(v)))
+      else:
+        string_array.append('{} = {}'.format(k, v))
+    # ['{} = {:.3f}'.format(k, v) for k, v in dict_.items()]
     return ', '.join(string_array)
 
   def _print_progress(self, i, total, rnd, loss_dict):
@@ -180,7 +193,9 @@ class Trainer():
      console.show_status('Train set: ' +self._dict_to_string(loss_dict), symbol='[Validation]')
 
     loss_dict = self.validate_model(self.validation_set,
-                                     batch_size=self.th.val_batch_size)
+                                    batch_size=self.th.val_batch_size,
+                                    update_record=True)
+
     console.show_status('Validation set: ' + self._dict_to_string(loss_dict),
                         symbol='[Validation]')
 
@@ -261,13 +276,13 @@ class Trainer():
     self.optimizer.apply_gradients(zip(grads, self.model.net.trainable_variables))
     return loss_dict
 
-  def validate_model(self, data_set:TFRData, batch_size=None):
-    loss_dict = {}
-    loss_key = 'loss: {}'.format(self.model.loss.name)
-    loss_dict[loss_key] = 0
+  def validate_model(self, data_set:TFRData, batch_size=None, update_record=False):
+    _loss_dict = {}
+    loss_key = self.model.loss
+    _loss_dict[loss_key] = 0
     for metric in self.model.metrics:
-      metric_key = 'metric: {}'.format(metric.name)
-      loss_dict[metric_key] = 0
+      metric_key = metric
+      _loss_dict[metric_key] = 0
     for i, data_batch in enumerate(data_set.gen_batches(batch_size,
                                                         is_training=False)):
       target = data_batch.targets
@@ -275,11 +290,35 @@ class Trainer():
       prediction = self.model.net(feature)
       loss = self.model.loss(prediction, target)
 
-      loss_key = 'loss: {}'.format(self.model.loss.name)
-      loss_dict[loss_key] += loss * data_batch.size /data_set.size
+      loss_key = self.model.loss
+      _loss_dict[loss_key] += loss * data_batch.size / data_set.size
       for metric in self.model.metrics:
-        metric_key = 'metric: {}'.format(metric.name)
-        loss_dict[metric_key] += metric(prediction, target)*data_batch.size/data_set.size
+        metric_key = metric
+        _loss_dict[metric_key] += metric(prediction, target)\
+                                 * data_batch.size / data_set.size
+    loss_dict = {}
+    if update_record:
+      self.model.loss.try_set_record(_loss_dict[self.model.loss])
+      if self.model.loss.record_appears:
+        loss_dict['Loss: {}'.format(self.model.loss.name)] \
+          = '{:.3f}'.format(_loss_dict[self.model.loss]) + ' [New Record]'
+      else:
+        loss_dict['Loss: {}'.format(self.model.loss.name)] \
+          = '{:.3f}'.format(_loss_dict[self.model.loss])
+      for metric in self.model.metrics:
+        metric.try_set_record(_loss_dict[metric])
+        if metric.record_appears:
+          loss_dict['Metric: {}'.format(metric.name)] \
+            = '{:.3f}'.format(_loss_dict[metric]) + ' [New Record]'
+        else:
+          loss_dict['Metric: {}'.format(metric.name)] \
+            = '{:.3f}'.format(_loss_dict[metric])
+    else:
+      loss_dict['Loss: {}'.format(self.model.loss.name)] =\
+        '{:.3f}'.format(_loss_dict[self.model.loss])
+      for metric in self.model.metrics:
+        loss_dict['Metric: {}'.format(metric.name)] =\
+          '{:.3f}'.format(_loss_dict[metric])
     return loss_dict
 
 
