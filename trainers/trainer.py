@@ -212,7 +212,7 @@ class Trainer():
         console.show_status('Record appears, saving the model.',
                             symbol='[Saving]')
         self.agent.save_parameters(self.model.net.trainable_variables,
-                                     counter=self.counter)
+                                      self.counter, self.model.mark)
       console.show_status('Record does not appear.',
                           symbol='[Saving]')
 

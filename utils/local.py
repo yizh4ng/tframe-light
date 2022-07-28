@@ -44,11 +44,7 @@ def check_path(*paths, create_path=True, is_file_path=False):
     # Make directory if necessary
     if not (is_file_path and i == len(paths) - 1):
       if not os.path.exists(path):
-        # TODO: flag in context.hub should not be used here
-        if tfr.context.hub.should_create_path and create_path:
-          os.mkdir(path)
-        else:
-          raise AssertionError('!! Directory {} does not exist'.format(path))
+        os.mkdir(path)
   return path
 
 
