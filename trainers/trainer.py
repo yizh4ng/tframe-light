@@ -4,6 +4,7 @@ from tframe.data.dataset import TFRData
 from tensorflow.keras.optimizers import Adam
 from tframe.configs.config_base import Config, Flag
 from tframe.enums import InputTypes, SaveMode
+from tframe.core.agent import Agent
 import numpy as np
 
 # Only trainer knows the trainer hub right?
@@ -43,6 +44,7 @@ class Trainer():
     self.th = TrainerHub(self)
     self.counter = 0
     self.cursor = None
+    self.agent = Agent(self)
 
     # Set callable attributes
 
@@ -204,6 +206,11 @@ class Trainer():
                                       batch_size=self.th.val_batch_size)
       console.show_status('Test set: ' + self._dict_to_string(loss_dict),
                           symbol='[Validation]')
+
+    if self.th.save_model:
+      if self.model.loss.record_appears:
+        self.agent.saved_model_paths(self.model.net.trainable_variables,
+                                     self.th.model_p)
 
     # Validation
       # if self._validate_model(rnd) and self._save_model_when_record_appears:

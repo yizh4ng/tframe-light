@@ -92,9 +92,9 @@ class Net(Function):
 
   @property
   def total_parameters(self):
-    for p in self.trainable_variables:
-      print(p.name, K.count_params(p))
-
+    # for p in self.trainable_variables:
+    #   print(p.name, K.count_params(p))
+    #
     return int( np.sum([K.count_params(p) for p in self.trainable_variables]))
 
   def print_output_shape(self):
