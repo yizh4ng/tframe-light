@@ -39,7 +39,6 @@ class Quantity():
         self._record_appears = True
 
   def __call__(self, predictions, targets):
-    self._record_appears = False
     assert predictions.shape == targets.shape
     result = self.function(predictions, targets)
     return result

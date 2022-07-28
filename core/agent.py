@@ -67,15 +67,16 @@ class Agent(object):
           os.mkdir(path)
       return path
 
-  def save_parameters(self, paras, dir_path, file_name, counter,
+  def save_parameters(self, paras, counter, dir_path=ckpt_dir,
                       maxmium_number_to_save=2, suffix='.sav'):
     if len(self.saved_model_paths) >= maxmium_number_to_save:
       saved_model_to_delete = self.saved_model_paths.pop(0)
       os.remove(saved_model_to_delete)
 
-    file_name += 'model{}-c{}{}'.format(file_name, counter, suffix)
+    file_name = 'model{}-c{}{}'.format(self._model.mark,
+                                        counter, suffix)
 
-    path = os.path.join(dir_path, file_name)
+    path = self.check_path(dir_path, file_name)
 
     tf.saved_model.save(paras, path)
 

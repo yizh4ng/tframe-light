@@ -208,9 +208,13 @@ class Trainer():
                           symbol='[Validation]')
 
     if self.th.save_model:
-      if self.model.loss.record_appears:
-        self.agent.saved_model_paths(self.model.net.trainable_variables,
-                                     self.th.model_p)
+      if self.model.metrics[0].record_appears:
+        console.show_status('Record appears, saving the model.',
+                            symbol='[Saving]')
+        self.agent.save_parameters(self.model.net.trainable_variables,
+                                     counter=self.counter)
+      console.show_status('Record does not appear.',
+                          symbol='[Saving]')
 
     # Validation
       # if self._validate_model(rnd) and self._save_model_when_record_appears:
