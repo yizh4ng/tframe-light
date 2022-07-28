@@ -16,7 +16,7 @@ import tensorflow as tf
 #      from tframe import tf
 
 from . import pedia
-# from .enums import *
+from .enums import *
 
 from .import core
 
@@ -26,8 +26,9 @@ from .utils import local
 # from .utils import linker
 from tframe.data.dataset import DataSet
 
-from .trainers.trainer import TrainerHub as DefaultHub
-from .import models
+# from .trainers.smartrainer import SmartTrainerHub as DefaultHub
+from .trainers.trainer import Trainer as DefaultHub
+# from .import models
 
 
 # from .utils.organizer import mu

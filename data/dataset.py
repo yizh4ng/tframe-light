@@ -174,7 +174,7 @@ class DataSet(TFRData):
   # region : Basic APIs
 
   def get_round_length(self, batch_size, num_steps=None, training=False,
-                       updates_per_round=2, shuffle=True):
+                       updates_per_round=None, shuffle=True):
     # Green pass
     if training and updates_per_round and updates_per_round > 0:
       assert shuffle is True and not self.is_rnn_input
@@ -207,7 +207,7 @@ class DataSet(TFRData):
     if training: self._set_dynamic_round_len(round_len)
     return round_len
 
-  def gen_batches(self, batch_size, updates_per_round=10,
+  def gen_batches(self, batch_size, updates_per_round=None,
                   shuffle=False, is_training=False):
     """Yield batches of data with the specific size"""
     round_len = self.get_round_length(batch_size, training=is_training,
@@ -220,6 +220,8 @@ class DataSet(TFRData):
       indices = self._select(i, batch_size, training=is_training, shuffle=shuffle)
       # Get subset
       data_batch = self[indices]
+      # data_batch.features = np.mean(data_batch.features, axis=1) #todo
+      # print(data_batch.features.shape)
       # Preprocess if necessary
       if self.batch_preprocessor is not None:
         data_batch = self.batch_preprocessor(data_batch, is_training)

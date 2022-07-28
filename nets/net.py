@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 from tframe.core import Function
+import tensorflow.keras.backend as K
+import numpy as np
 from tframe.layers.common import single_input
 
 
@@ -49,7 +51,6 @@ class Net(Function):
   # TODO: modify with_logits mechanism
   def _link(self, *input, **kwargs):
     # region : Check inputs
-
     if len(input) == 1:
       input = input[0]
     else:
@@ -83,9 +84,19 @@ class Net(Function):
 
   @property
   def trainable_variables(self):
-    trainalbe_variables = []
+    _trainalbe_variables = []
     for f in self.children:
-      # print(f)
-      assert hasattr(f, 'trainable_variables')
-      trainalbe_variables.extend(f.trainable_variables)
-    return trainalbe_variables
+      _trainalbe_variables.extend(f.trainable_variables)
+    # print(len(_trainalbe_variables))
+    return _trainalbe_variables
+
+  @property
+  def total_parameters(self):
+    for p in self.trainable_variables:
+      print(p.name, K.count_params(p))
+
+    return int( np.sum([K.count_params(p) for p in self.trainable_variables]))
+
+  def print_output_shape(self):
+    for f in self.children:
+      print(f.output_shape)

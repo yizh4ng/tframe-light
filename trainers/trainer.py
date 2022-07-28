@@ -6,6 +6,7 @@ from tframe.configs.config_base import Config, Flag
 from tframe.enums import InputTypes, SaveMode
 import numpy as np
 
+# Only trainer knows the trainer hub right?
 
 class Trainer():
   """Base class of trainer for training tframe models.
@@ -37,10 +38,11 @@ class Trainer():
     self._validation_set = None
     self._test_set = None
     self.set_data(training_set, validation_set, test_set)
-    self.counter = 0
     self.round = 0
-    self.optimizer = Adam(learning_rate=0.0001)
+    self.optimizer = Adam(learning_rate=0.0003)
     self.th = TrainerHub(self)
+    self.counter = 0
+    self.cursor = None
 
     # Set callable attributes
 
@@ -98,6 +100,13 @@ class Trainer():
     if test_set is not None:
       self._test_set = test_set
 
+  def _inter_cut(self, i, total, content, prompt='>>', start_time=None):
+    # Show content
+    console.show_status(content, symbol=prompt)
+    # Print progress bar
+    console.print_progress(i, total, start_time=start_time)
+    # self.recover_prototal_roundsgress(start_time)
+
   def recover_progress(self, start_time=None):
     # Print progress bar
     if self.th.progress_bar and self.th.round_length is not None:
@@ -106,6 +115,24 @@ class Trainer():
       assert progress is not None
       console.print_progress(progress=progress, start_time=start_time)
 
+  @staticmethod
+  def _dict_to_string(dict_):
+    assert isinstance(dict_, dict)
+    string_array = ['{} = {:.3f}'.format(k, v) for k, v in dict_.items()]
+    return ', '.join(string_array)
+
+  def _print_progress(self, i, total, rnd, loss_dict):
+    content = '{} {} '.format(
+      self.th.round_name, rnd, loss_dict)
+    content += self._dict_to_string(loss_dict)
+
+    # Show time elapsed for a single update if required
+    if self.th.tic_toc:
+      # Here the key for toc should be taken care of
+      # TODO: note that print progress may take a lot of time
+      content += ' ({:.1f}ms)'.format(self.th.toc('__update') * 1000)
+
+    self._inter_cut(i, total, content, prompt='[Train]', start_time=self.th.start_time)
   # endregion : Public Methods
 
   # region : Train
@@ -123,6 +150,7 @@ class Trainer():
   # region : During training
 
   def _outer_loop(self):
+    self.counter = 0
     rnd = 0
     for _ in range(self.th.total_outer_loops): #TODO: epcoh num
       rnd += 1
@@ -133,15 +161,36 @@ class Trainer():
     return rnd
 
   def _inner_loop(self, rnd):
+    self.cursor = 0
     self._record_count = 0
     for i, batch in enumerate(self.training_set.gen_batches(
         self.th.batch_size, updates_per_round =self.th.updates_per_round,
         shuffle=self.th.shuffle, is_training=True)):
+      self.cursor += 1
       self.counter += 1
       # Update model
-      print(self._update_model(batch))
+      loss_dict = self._update_model(batch)
 
-      # Validation
+      if np.mod(self.counter - 1, self.th.print_cycle) == 0:
+        self._print_progress(i, self.training_set._dynamic_round_len, rnd, loss_dict)
+
+    if self.th.validate_train_set:
+     loss_dict = self.validate_model(self.training_set,
+                                     batch_size=self.th.val_batch_size)
+     console.show_status('Train set: ' +self._dict_to_string(loss_dict), symbol='[Validation]')
+
+    loss_dict = self.validate_model(self.validation_set,
+                                     batch_size=self.th.val_batch_size)
+    console.show_status('Validation set: ' + self._dict_to_string(loss_dict),
+                        symbol='[Validation]')
+
+    if self.th.validate_test_set:
+      loss_dict = self.validate_model(self.test_set,
+                                      batch_size=self.th.val_batch_size)
+      console.show_status('Test set: ' + self._dict_to_string(loss_dict),
+                          symbol='[Validation]')
+
+    # Validation
       # if self._validate_model(rnd) and self._save_model_when_record_appears:
       #   if not self.is_online: assert np.isscalar(self.th.round_progress)
       #   self._save_model(inter_cut=True, progress=self.th.round_progress)
@@ -200,21 +249,39 @@ class Trainer():
   def _update_model(self, data_batch):
     target = data_batch.targets
     feature = data_batch.features
-
+    loss_dict = {}
     with tf.GradientTape() as tape:
-      loss = self.model.loss_function(self.model.net(feature), target)
+      prediction = self.model.net(feature)
+      loss = self.model.loss(prediction, target)
+      loss_dict['loss: {}'.format(self.model.loss.name)] = loss
+      for metric in self.model.metrics:
+        loss_dict['metric: {}'.format(metric.name)] = metric(prediction, target)
     grads = tape.gradient(loss, self.model.net.trainable_variables)
+    # print(len(self.model.net.trainable_variables))
     self.optimizer.apply_gradients(zip(grads, self.model.net.trainable_variables))
-    return np.mean(loss)
+    return loss_dict
 
+  def validate_model(self, data_set:TFRData, batch_size=None):
+    loss_dict = {}
+    loss_key = 'loss: {}'.format(self.model.loss.name)
+    loss_dict[loss_key] = 0
+    for metric in self.model.metrics:
+      metric_key = 'metric: {}'.format(metric.name)
+      loss_dict[metric_key] = 0
+    for i, data_batch in enumerate(data_set.gen_batches(batch_size,
+                                                        is_training=False)):
+      target = data_batch.targets
+      feature = data_batch.features
+      prediction = self.model.net(feature)
+      loss = self.model.loss(prediction, target)
 
+      loss_key = 'loss: {}'.format(self.model.loss.name)
+      loss_dict[loss_key] += loss * data_batch.size /data_set.size
+      for metric in self.model.metrics:
+        metric_key = 'metric: {}'.format(metric.name)
+        loss_dict[metric_key] += metric(prediction, target)*data_batch.size/data_set.size
+    return loss_dict
 
-
-  @staticmethod
-  def _dict_to_string(dict_):
-    assert isinstance(dict_, dict)
-    string_array = ['{} = {:.3f}'.format(k, v) for k, v in dict_.items()]
-    return ', '.join(string_array)
 
 
 
