@@ -11,7 +11,7 @@ from tframe.layers.common import single_input
 class Net(Function):
   """Net is only responsible to provide a function"""
 
-  def __init__(self, name,  **kwargs):
+  def __init__(self, name, children:list=None, **kwargs):
     """Instantiate Net, a name must be given
        TODO: deprecate inter_type
        :param level: level 0 indicates the trunk
@@ -20,6 +20,8 @@ class Net(Function):
     self.name = name
 
     self.children = []
+    if children is not None:
+      self.children = children
 
   # region : Overrode Method
 

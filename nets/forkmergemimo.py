@@ -102,10 +102,8 @@ class ForkMergeDAGMIMO(Net):
     for j in range(len(self.vertices)):
       input_index = np.sum(np.argwhere(self.adj_mat[:, j]), -1)
       if len(input_index) == 1:
-        print(self.vertices[j], j)
         input_tensors[j] = self.vertices[j](input_tensors[input_index[0]])
       elif len(input_index) > 1:
-        print(self.vertices[j], j)
         input = [input_tensors[k] for k in input_index]
         input_tensors[j] = self.vertices[j](input)
     return input_tensors

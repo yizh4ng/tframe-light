@@ -3,7 +3,9 @@ import os, sys
 import re
 from tframe import console
 from tframe.utils.local import check_path, clear_paths
+from tensorflow import keras
 import shutil
+
 
 
 class Agent(object):
@@ -57,12 +59,25 @@ class Agent(object):
     model.save(path)
     self.saved_model_paths.append(path)
 
+  def load_model(self, mark, suffix='.sav'):
+    counter = 0
+    for root, dirs, files in os.walk(self.ckpt_dir):
+      for dir in dirs:
+        _counter = self.get_model_counter_from_name(dir)
+        if _counter is not None:
+          if _counter > counter:
+            counter = _counter
+    file_name = 'model{}-c{}{}'.format(mark, counter, suffix)
+    path = check_path(self.ckpt_dir, file_name)
+    return keras.models.load_model(path), counter
 
 
   def get_model_counter_from_name(self, path):
-    matched = re.search(r'-c(\d+)', path)
-    assert matched
-    counter = matched.group()
-    return counter
+    matched = re.search('-c(\d+)', path)
+    if matched:
+      counter = matched.group(1)
+      return int(counter)
+    else:
+      return None
 
 

@@ -153,7 +153,14 @@ class Trainer():
   # region : Train
 
   def train(self):
-
+    if self.th.load_model:
+      # self.model.build(self.th.input_shape)
+      self.model.keras_model, self.counter = self.agent.load_model(self.model.mark)
+      console.show_status('Model loaded from counter {}'.format(self.counter))
+    else:
+      self.model.build(self.th.input_shape)
+      console.show_status('Model built.')
+    self.model.keras_model.summary()
     rounds = self._outer_loop()
 
     # :: After training
@@ -166,9 +173,6 @@ class Trainer():
 
   def _outer_loop(self):
     self.counter = 0
-    self.model.build(self.th.input_shape)
-    console.show_status('Model built.')
-    self.model.keras_model.summary()
     rnd = 0
     for _ in range(self.th.total_outer_loops): #TODO: epcoh num
       rnd += 1
@@ -282,7 +286,7 @@ class Trainer():
     feature = data_batch.features
     loss_dict = {}
     with tf.GradientTape() as tape:
-      prediction = self.model.net(feature)
+      prediction = self.model.keras_model(feature)
       loss = self.model.loss(prediction, target)
       loss_dict['loss: {}'.format(self.model.loss.name)] = loss
       for metric in self.model.metrics:
