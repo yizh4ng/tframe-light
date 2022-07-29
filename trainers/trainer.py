@@ -172,7 +172,6 @@ class Trainer():
   # region : During training
 
   def _outer_loop(self):
-    self.counter = 0
     rnd = 0
     for _ in range(self.th.total_outer_loops): #TODO: epcoh num
       rnd += 1
@@ -307,7 +306,7 @@ class Trainer():
                                                         is_training=False)):
       target = data_batch.targets
       feature = data_batch.features
-      prediction = self.model.net(feature)
+      prediction = self.model.keras_model(feature)
       loss = self.model.loss(prediction, target)
 
       loss_key = self.model.loss
