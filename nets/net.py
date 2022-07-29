@@ -9,15 +9,7 @@ from tframe.layers.common import single_input
 
 
 class Net(Function):
-  """Function which can packet sub-functions automatically when calling add
-     method"""
-
-  # CASCADE = pedia.cascade
-  # PROD = pedia.prod
-  # SUM = pedia.sum
-  # FORK = pedia.fork
-  # CONCAT = pedia.concat
-  # RECURRENT = 'RECURRENT'
+  """Net is only responsible to provide a function"""
 
   def __init__(self, name,  **kwargs):
     """Instantiate Net, a name must be given
