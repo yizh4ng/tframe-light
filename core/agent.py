@@ -14,7 +14,7 @@ class Agent(object):
     self.trainer = trainer
     self._model = self.trainer.model
     self.config_dir()
-    self.summary_writer = tf.summary.create_file_writer(self.log_dir)
+    self.summary_writer = None
 
   @property
   def root_path(self):
@@ -40,8 +40,11 @@ class Agent(object):
 
 
   def clear_dirs(self):
-    paths = [self.log_dir, self.ckpt_dir, self.snapshot_dir]
-    clear_paths(paths)
+    paths = [self.snapshot_dir, self.ckpt_dir, self.log_dir]
+    for path in paths:
+      # clear_paths(path)
+      shutil.rmtree(path)
+
 
   def config_dir(self, dir_depth=1):
     """This method should be called only in XX_core.py module for setting
@@ -87,6 +90,8 @@ class Agent(object):
 
 
   def write_summary(self, name:str, value, step):
+    if self.summary_writer is None:
+      self.summary_writer = tf.summary.create_file_writer(self.log_dir)
     with self.summary_writer.as_default():
       tf.summary.scalar(name, value, step)
       self.summary_writer.flush()
