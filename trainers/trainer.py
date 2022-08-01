@@ -21,6 +21,7 @@ class Trainer():
   def __init__(
       self,
       model,
+      agent,
       training_set=None,
       validation_set=None,
       test_set=None,
@@ -37,7 +38,7 @@ class Trainer():
     self.th = hub
     self.counter = 0
     self.cursor = None
-    self.agent = Agent(self)
+    self.agent = agent
 
     # Set callable attributes
 

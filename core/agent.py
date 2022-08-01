@@ -9,11 +9,10 @@ import shutil
 
 
 class Agent(object):
-  def __init__(self, trainer):
+  def __init__(self, model):
     self.saved_model_paths = []
-    self.trainer = trainer
-    self._model = self.trainer.model
-    self.config_dir()
+    self._model = model
+    # self.config_dir()
     self.summary_writer = None
 
   @property
@@ -46,7 +45,7 @@ class Agent(object):
       shutil.rmtree(path)
 
 
-  def config_dir(self, dir_depth=1):
+  def config_dir(self, dir_depth=2):
     """This method should be called only in XX_core.py module for setting
        default job_dir and data_dir.
     """
