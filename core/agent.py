@@ -1,8 +1,10 @@
 import tensorflow as tf
 import os, sys
 import re
+from tframe.utils import Note
 from tframe import console
 from tframe.utils.local import check_path, clear_paths
+from tframe.utils.file_tools import io_utils
 from tensorflow import keras
 import shutil
 
@@ -14,6 +16,7 @@ class Agent(object):
     self._model = model
     # self.config_dir()
     self.summary_writer = None
+    self.note = Note()
 
   @property
   def root_path(self):
@@ -24,7 +27,6 @@ class Agent(object):
   def log_dir(self):
     return check_path(self.root_path, 'logs',
                       self._model.mark)
-
 
   @property
   def ckpt_dir(self):
@@ -37,6 +39,9 @@ class Agent(object):
     return check_path(self.root_path, 'snapshot',
                       self._model.mark)
 
+  @property
+  def gather_summ_path(self):
+    return os.path.join(check_path(self.root_path), 'gather.sum')
 
   def clear_dirs(self):
     paths = [self.snapshot_dir, self.ckpt_dir, self.log_dir]
@@ -104,6 +109,25 @@ class Agent(object):
     for key in  dict:
       self.write_summary(suffix+key.name, dict[key], step)
 
+  def gather_to_summary(self):
+    import pickle
+    # Try to load note list into summaries
+    file_path = self.gather_summ_path
+    if os.path.exists(file_path):
+      # with open(file_path, 'rb') as f: summary = pickle.load(f)
+      summary = io_utils.load(file_path)
+      assert len(summary) > 0
+    else: summary = []
+    # Add note to list and save
+    note = self.note
+    summary.append(note)
+    io_utils.save(summary, file_path)
+    # with open(file_path, 'wb') as f:
+    #   pickle.dump(summary, f, pickle.HIGHEST_PROTOCOL)
+
+    # Show status
+    console.show_status('Note added to summaries ({} => {}) at `{}`'.format(
+      len(summary) - 1, len(summary), file_path))
 
   def create_bash(self):
     command = 'tensorboard --logdir=./logs/ --port={}'.format(6006)

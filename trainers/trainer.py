@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import tensorflow as tf
 from tframe import console, hub
 from tframe.data.dataset import TFRData
@@ -140,7 +142,12 @@ class Trainer():
 
     # :: After training
     # self._end_training(rounds)
-
+    # Put down key configurations to note
+    self.agent.note.put_down_configs(self.th.key_options)
+    # Export notes if necessary
+    # Gather notes if necessary
+    if self.th.gather_note:
+      self.agent.gather_to_summary()
 
 
 
@@ -159,6 +166,29 @@ class Trainer():
         break
 
     console.show_status('Training ends at round {}'.format(rnd), symbol='[Patience]')
+
+    if self.th.gather_note:
+      self.agent.note.put_down_criterion('Total Iterations', self.counter)
+      self.agent.note.put_down_criterion('Total Rounds', rnd)
+      # Evaluate the best model if necessary
+      ds_dict = OrderedDict()
+      # ds_dict['Train'] = self.training_set
+      ds_dict['Val'] = self.validation_set
+      ds_dict['Test'] = self.test_set
+      if len(ds_dict) > 0:
+        # Load the best model
+        if self.th.save_model:
+          self.model.keras_model, self.counter = self.agent.load_model(
+            self.model.mark)
+        # Evaluate the specified data sets
+        for name, data_set in ds_dict.items():
+          loss_dict = self.validate_model(self.training_set,
+                                          batch_size=self.th.val_batch_size)
+          for key in loss_dict:
+            title = '{} {}'.format(name, key.name)
+            # print(title, loss_dict[key])
+            self.agent.note.put_down_criterion(title, loss_dict[key].numpy())
+
     return rnd
 
   def _inner_loop(self, rnd):
@@ -199,6 +229,7 @@ class Trainer():
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
+    self.th._stop = True # Test
     if self.model.metrics[0].record_appears:
       self.patenice = self.th.patience
       console.show_status('Record appears', symbol='[Patience]')
