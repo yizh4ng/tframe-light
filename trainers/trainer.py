@@ -40,7 +40,6 @@ class Trainer():
     self._test_set = None
     self.set_data(training_set, validation_set, test_set)
     self.round = 0
-    self.optimizer = Adam(learning_rate=0.0003)
     self.th = TrainerHub(self)
     self.counter = 0
     self.cursor = None
@@ -168,12 +167,16 @@ class Trainer():
 
   def _outer_loop(self):
     rnd = 0
+    self.patenice = self.th.patience
     for _ in range(self.th.total_outer_loops): #TODO: epcoh num
       rnd += 1
       console.section('round {}:'.format(rnd))
 
       self._inner_loop(rnd)
       self.round += 1
+      if self.th._stop:
+        break
+    console.section('Training ends at round {}'.format(rnd))
     return rnd
 
   def _inner_loop(self, rnd):
@@ -214,16 +217,22 @@ class Trainer():
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
-    if self.th.save_model:
-      if self.model.metrics[0].record_appears:
-        console.show_status('Record appears, saving the model to {}'.format(
-          self.agent.ckpt_dir
-        ),
-                            symbol='[Saving]')
+    if self.model.metrics[0].record_appears:
+      self.patenice = self.th.patience
+      console.show_status('Record appears', symbol='[Patience]')
+      if self.th.save_model:
+        console.show_status('Saving the model to {}'.format(
+          self.agent.ckpt_dir ), symbol='[Saving]')
         self.agent.save_model(self.model.keras_model,
                                       self.counter, self.model.mark)
-      console.show_status('Record does not appear.',
-                          symbol='[Saving]')
+    else:
+      self.patenice -= 1
+      if self.patenice < 0:
+        self.th._stop = True
+      else:
+        console.show_status('Record does not appear [{}/{}]'.format(
+          self.patenice + 1, self.th.patience), symbol='[Patience]')
+
 
     # Validation
       # if self._validate_model(rnd) and self._save_model_when_record_appears:
@@ -292,7 +301,7 @@ class Trainer():
       for metric in self.model.metrics:
         loss_dict[metric] = metric(prediction, target)
     grads = tape.gradient(loss, self.model.keras_model.trainable_variables)
-    self.optimizer.apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
+    Adam(learning_rate=self.th.learning_rate).apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
     return loss_dict
 
   def validate_model(self, data_set:TFRData, batch_size=None, update_record=False):
