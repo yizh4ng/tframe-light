@@ -27,7 +27,9 @@ from .utils import local
 from tframe.data.dataset import DataSet
 
 # from .trainers.smartrainer import SmartTrainerHub as DefaultHub
-from .trainers.trainer import Trainer as DefaultHub
+from .configs.trainerhub import TrainerHub as DefaultHub
+hub = DefaultHub()
+
 # from .import models
 
 
