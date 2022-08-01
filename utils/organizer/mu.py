@@ -13,8 +13,8 @@ from tframe.nets.classic.conv_nets.nas101 import NAS101
 from tframe.nets.classic.conv_nets.unet2d import UNet2D
 from tframe.nets.classic.conv_nets.ynet2d import YNet2D
 
-from tframe.nets.forkmergemimo import ForkMerge
-from tframe.nets.forkmergemimo import ForkMergeDAG
+from tframe.nets.dag import ForkMerge
+from tframe.nets.dag import ForkMergeDAG
 
 # ---------------------------------------------------------------
 #  Layer

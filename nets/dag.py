@@ -11,7 +11,7 @@ from tframe.layers.merge import Merge
 from tframe.nets.net import Net
 
 
-class ForkMergeDAGMIMO(Net):
+class DAGNet(Net):
   """A more general fork-merge neural module that allows the structure between
   input and output operation to be any DAG, similar to what has been used
   in NAS-X01 serial papers. """
@@ -60,7 +60,7 @@ class ForkMergeDAGMIMO(Net):
     :param kwargs: other keyword arguments
     """
     # Call parent's initializer
-    super(ForkMergeDAGMIMO, self).__init__(name, **kwargs)
+    super(DAGNet, self).__init__(name, **kwargs)
     # Attributes
     self.vertices = vertices
     self.edges = edges
