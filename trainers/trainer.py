@@ -118,22 +118,14 @@ class Trainer():
       console.print_progress(progress=progress, start_time=start_time)
 
   @staticmethod
-  def _dict_to_string(dict_):
-    def is_float(num):
-      try:
-        float(num)
-        return True
-      except ValueError:
-        return False
-
+  def _dict_to_string(dict_, show_records=False):
     assert isinstance(dict_, dict)
     string_array = []
     for k, v in dict_.items():
-      if is_float(v):
-        string_array.append('{} = {:.3f}'.format(k, float(v)))
-      else:
-        string_array.append('{} = {}'.format(k, v))
-    # ['{} = {:.3f}'.format(k, v) for k, v in dict_.items()]
+      string = '{} = {:.3f}'.format(k.name, v)
+      if k.record_appears and show_records:
+        string +=' [New Record]'
+      string_array.append(string)
     return ', '.join(string_array)
 
   def _print_progress(self, i, total, rnd, loss_dict):
@@ -161,6 +153,9 @@ class Trainer():
       self.model.build(self.th.input_shape)
       console.show_status('Model built.')
     self.model.keras_model.summary()
+
+    self.agent.create_bash()
+
     rounds = self._outer_loop()
 
     # :: After training
@@ -198,20 +193,26 @@ class Trainer():
     if self.th.validate_train_set:
      loss_dict = self.validate_model(self.training_set,
                                      batch_size=self.th.val_batch_size)
-     console.show_status('Train set: ' +self._dict_to_string(loss_dict), symbol='[Validation]')
+     self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='train')
+
+     console.show_status('Train set: ' +self._dict_to_string(loss_dict, show_records=True), symbol='[Validation]')
 
     loss_dict = self.validate_model(self.validation_set,
                                     batch_size=self.th.val_batch_size,
                                     update_record=True)
+    self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='validation')
 
-    console.show_status('Validation set: ' + self._dict_to_string(loss_dict),
+    console.show_status('Validation set: ' + self._dict_to_string(loss_dict,
+                                                                  show_records=True),
                         symbol='[Validation]')
 
     if self.th.validate_test_set:
       loss_dict = self.validate_model(self.test_set,
                                       batch_size=self.th.val_batch_size)
-      console.show_status('Test set: ' + self._dict_to_string(loss_dict),
+      console.show_status('Test set: ' + self._dict_to_string(loss_dict,
+                                                              show_records=True),
                           symbol='[Validation]')
+      self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
     if self.th.save_model:
       if self.model.metrics[0].record_appears:
@@ -287,18 +288,16 @@ class Trainer():
     with tf.GradientTape() as tape:
       prediction = self.model.keras_model(feature)
       loss = self.model.loss(prediction, target)
-      loss_dict['loss: {}'.format(self.model.loss.name)] = loss
+      loss_dict[self.model.loss] = loss
       for metric in self.model.metrics:
-        loss_dict['metric: {}'.format(metric.name)] = metric(prediction, target)
+        loss_dict[metric] = metric(prediction, target)
     grads = tape.gradient(loss, self.model.keras_model.trainable_variables)
-    # print(len(self.model.net.trainable_variables))
     self.optimizer.apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
     return loss_dict
 
   def validate_model(self, data_set:TFRData, batch_size=None, update_record=False):
     _loss_dict = {}
-    loss_key = self.model.loss
-    _loss_dict[loss_key] = 0
+    _loss_dict[self.model.loss] = 0
     for metric in self.model.metrics:
       metric_key = metric
       _loss_dict[metric_key] = 0
@@ -309,36 +308,15 @@ class Trainer():
       prediction = self.model.keras_model(feature)
       loss = self.model.loss(prediction, target)
 
-      loss_key = self.model.loss
-      _loss_dict[loss_key] += loss * data_batch.size / data_set.size
+      _loss_dict[self.model.loss] += loss * data_batch.size / data_set.size
       for metric in self.model.metrics:
-        metric_key = metric
-        _loss_dict[metric_key] += metric(prediction, target)\
+        _loss_dict[metric] += metric(prediction, target)\
                                  * data_batch.size / data_set.size
-    loss_dict = {}
     if update_record:
       self.model.loss.try_set_record(_loss_dict[self.model.loss])
-      if self.model.loss.record_appears:
-        loss_dict['Loss: {}'.format(self.model.loss.name)] \
-          = '{:.3f}'.format(_loss_dict[self.model.loss]) + ' [New Record]'
-      else:
-        loss_dict['Loss: {}'.format(self.model.loss.name)] \
-          = '{:.3f}'.format(_loss_dict[self.model.loss])
       for metric in self.model.metrics:
         metric.try_set_record(_loss_dict[metric])
-        if metric.record_appears:
-          loss_dict['Metric: {}'.format(metric.name)] \
-            = '{:.3f}'.format(_loss_dict[metric]) + ' [New Record]'
-        else:
-          loss_dict['Metric: {}'.format(metric.name)] \
-            = '{:.3f}'.format(_loss_dict[metric])
-    else:
-      loss_dict['Loss: {}'.format(self.model.loss.name)] =\
-        '{:.3f}'.format(_loss_dict[self.model.loss])
-      for metric in self.model.metrics:
-        loss_dict['Metric: {}'.format(metric.name)] =\
-          '{:.3f}'.format(_loss_dict[metric])
-    return loss_dict
+    return _loss_dict
 
 
 

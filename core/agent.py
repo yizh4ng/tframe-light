@@ -14,6 +14,7 @@ class Agent(object):
     self.trainer = trainer
     self._model = self.trainer.model
     self.config_dir()
+    self.summary_writer = tf.summary.create_file_writer(self.log_dir)
 
   @property
   def root_path(self):
@@ -22,7 +23,7 @@ class Agent(object):
 
   @property
   def log_dir(self):
-    return check_path(self.root_path, 'log',
+    return check_path(self.root_path, 'logs',
                       self._model.mark)
 
 
@@ -81,3 +82,28 @@ class Agent(object):
       return None
 
 
+  def write_summary(self, name:str, value, step):
+    with self.summary_writer.as_default():
+      tf.summary.scalar(name, value, step)
+      self.summary_writer.flush()
+
+  def write_summary_from_dict(self, dict:dict, step:int,
+                              name_scope:str = ''):
+    suffix = ''
+    if name_scope != '':
+      suffix = '{}/'.format(name_scope)
+
+    for key in  dict:
+      self.write_summary(suffix+key.name, dict[key], step)
+
+
+  def create_bash(self):
+    command = 'tensorboard --logdir=./logs/ --port={}'.format(6006)
+    file_path = check_path(self.root_path, create_path=True)
+    file_names = ['win_launch_tensorboard.bat', 'unix_launch_tensorboard.sh']
+    for file_name in file_names:
+      path = os.path.join(file_path, file_name)
+      if not os.path.exists(path):
+        f = open(path, 'w')
+        f.write(command)
+        f.close()
