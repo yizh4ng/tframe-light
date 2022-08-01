@@ -153,6 +153,9 @@ class Trainer():
       console.show_status('Model built.')
     self.model.keras_model.summary()
 
+    if self.th.overwrite:
+      self.agent.clear_dirs()
+
     self.agent.create_bash()
 
     rounds = self._outer_loop()
@@ -176,7 +179,8 @@ class Trainer():
       self.round += 1
       if self.th._stop:
         break
-    console.section('Training ends at round {}'.format(rnd))
+
+    console.show_status('Training ends at round {}'.format(rnd), symbol='[Patience]')
     return rnd
 
   def _inner_loop(self, rnd):

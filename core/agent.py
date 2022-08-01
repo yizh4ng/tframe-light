@@ -39,6 +39,10 @@ class Agent(object):
                       self._model.mark)
 
 
+  def clear_dirs(self):
+    paths = [self.log_dir, self.ckpt_dir, self.snapshot_dir]
+    clear_paths(paths)
+
   def config_dir(self, dir_depth=1):
     """This method should be called only in XX_core.py module for setting
        default job_dir and data_dir.
