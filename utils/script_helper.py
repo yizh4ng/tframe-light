@@ -25,8 +25,8 @@ from tframe.utils.string_tools import get_time_string
 from tframe.utils.file_tools.io_utils import safe_open
 from tframe.utils.organizer.task_tools import update_job_dir
 from tframe.configs.flag import Flag
-from tframe.trainers import SmartTrainerHub
-
+# from tframe.trainers import SmartTrainerHub
+from tframe import DefaultHub
 from tframe.alchemy.pot import Pot
 from tframe.alchemy.scrolls import get_argument_keys
 
@@ -41,7 +41,7 @@ def register_flags(config_class):
   flag_names = [f.name for f in flags]
 
 
-register_flags(SmartTrainerHub)
+register_flags(DefaultHub)
 
 
 def check_flag_name(method):

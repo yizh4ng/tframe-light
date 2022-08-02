@@ -229,7 +229,6 @@ class Trainer():
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
-    self.th._stop = True # Test
     if self.model.metrics[0].record_appears:
       self.patenice = self.th.patience
       console.show_status('Record appears', symbol='[Patience]')
