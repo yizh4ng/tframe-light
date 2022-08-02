@@ -50,12 +50,17 @@ class Agent(object):
       shutil.rmtree(path)
 
 
-  def config_dir(self, dir_depth=2):
+  def config_dir(self, __file__, dir_depth=2):
     """This method should be called only in XX_core.py module for setting
        default job_dir and data_dir.
     """
+    ROOT = os.path.abspath(__file__)
+    for _ in range(dir_depth):
+      ROOT = os.path.dirname(ROOT)
+      if sys.path[0] != ROOT: sys.path.insert(0, ROOT)
     self.job_dir = os.path.join(sys.path[dir_depth - 1])
     self.data_dir = os.path.join(self.job_dir, 'data')
+    self.job_dir += '\{}'.format(self._model.name)
     console.show_status('Job directory set to `{}`'.format(self.job_dir))
 
 

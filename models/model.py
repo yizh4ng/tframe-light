@@ -3,7 +3,7 @@ import tensorflow as tf
 from tframe import console
 
 class Model(object):
-  def __init__(self,loss, metrics, net):
+  def __init__(self,loss, metrics, net, name='DefaultModel'):
     assert callable(loss)
     assert isinstance(metrics, (list, tuple))
     self.loss = loss
@@ -11,6 +11,7 @@ class Model(object):
     self.net = net
     self._mark = None
     self.keras_model = None
+    self.name = name
 
   @property
   def mark(self):
