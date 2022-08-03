@@ -6,11 +6,11 @@
 * It supports multi-input and multi-output DAG.
 * Taking the advantages of the eager model from tensorflow 2, tframe-light supports dynamic computational graphs :), while losses some speed :( . 
 * In tframe, only the layers such as Conv2D and ReLU are from the original tensorflow. In tframe-light, we use the keras model using its functional api. This implies, the model can be easily loaded in antoher scipts and we do not need to build networks again. Besides, we can enjoy some convenient functions from keras :), such as model.summary() and model.trainable_variables() It can be less cutomized but much easier.
-* Since we use the functional api to build keras models, any deep learning codes using tensorflow2 online can be direcly replemented by ctrl-c and ctrl-v :p. I am encouraging anyone to copy codes :) I mean we got much more resources to learn.
+* Since we use the functional api to build keras models, any deep learning codes using tensorflow2 online can be direcly replemented by ctrl-c and ctrl-v :p. I am not encouraging anyone to copy codes :) I mean we got much more resources to learn.
 
 ## The following functions are completed
 * Network Searching
-* Gather experiments to the note and visualze them.
+* Gather experiments to the note and visualize them.
 
 ## To do list
 * Visualize features map
