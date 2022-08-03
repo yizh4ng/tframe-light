@@ -91,70 +91,13 @@ class TrainerHub(Config):
     assert 1 in (self.epoch, self.round)
     return max(self.epoch, self.round)
 
-  # @property
-  # def validation_on(self):
-  #   mm = self.trainer.metrics_manager
-  #   assert isinstance(mm, MetricsManager)
-  #   if not mm.has_metric: return False
-  #   val_data = self.trainer.validation_set
-  #
-  #   # return val_data is not None and self.validate_modulus > 0
-  #   return all([val_data is not None,
-  #               self.validate_cycle > 0 or self.validation_per_round > 0])
-
   @property
   def start_time(self):
     return self._time_stamp['__start_time']
 
-  # @property
-  # def stop(self):
-  #   value = self._stop and self.early_stop
-  #   self._stop = False
-  #   return value
-
-  # @property
-  # def round_progress(self):
-  #   if self.round_length is None or self.cursor is None: return None
-  #   return 1.0 * self.cursor / self.round_length
 
   # region : Modulus
 
-  # @property
-  # def round_len_is_active(self):
-  #   assert isinstance(self.trainer.training_set, TFRData)
-  #   return not isinstance(self.trainer.training_set, PerpetualMachine)
-
-  # def _get_modulus(self, verb, act_per_round_key=None, act_cycle_key=None):
-  #   assert isinstance(verb, str)
-  #   if act_per_round_key is None:
-  #     act_per_round_key = '{}_per_round'.format(verb)
-  #   if act_cycle_key is None: act_cycle_key = '{}_cycle'.format(verb)
-  #   # Get value
-  #   act_per_round = getattr(self, act_per_round_key)
-  #   act_cycle = getattr(self, act_cycle_key)
-  #   # act_cycle has the highest priority
-  #   if any([act_cycle > 0, not self.round_len_is_active, act_per_round <= 0]):
-  #     return act_cycle
-  #   # [Compromise] avoid error in Trainer._show_configuration method
-  #   if self.round_length is None: return None
-  #   return self.round_length // act_per_round
-  #
-  # @property
-  # def validate_modulus(self):
-  #   return self._get_modulus(
-  #     'validate', act_per_round_key='validation_per_round')
-  #
-  # @property
-  # def probe_modulus(self): return self._get_modulus('probe')
-  #
-  # @property
-  # def etch_modulus(self): return self._get_modulus('etch')
-  #
-  # @property
-  # def note_modulus(self):
-  #   if self.note_cycle <= 0 and self.export_tensors_upon_validation:
-  #     return self.validate_modulus
-  #   return self._get_modulus('note')
 
   # endregion : Modulus
 
@@ -176,9 +119,6 @@ class TrainerHub(Config):
   def toc(self, key='__start_time'):
     assert self._time_stamp[key] is not None
     return time.time() - self._time_stamp[key]
-
-  def raise_stop_flag(self):
-    self._stop = True
 
   # endregion : Public Methods
 
