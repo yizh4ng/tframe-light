@@ -97,6 +97,12 @@ class Agent(object):
     else:
       return None
 
+  def write_model_summary(self):
+    if self.summary_writer is None:
+      self.summary_writer = tf.summary.create_file_writer(self.log_dir)
+    with self.summary_writer.as_default():
+      tf.summary.trace_export(name='model_structure', step=0,
+                              profiler_outdir=self.log_dir)
 
   def write_summary(self, name:str, value, step):
     if self.summary_writer is None:
