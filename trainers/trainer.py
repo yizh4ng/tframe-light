@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
+from tframe import console
 import tensorflow as tf
-from tframe import console, hub
 from tframe.data.dataset import TFRData
 from tensorflow.keras.optimizers import Adam
 from tframe.core.agent import Agent
@@ -24,6 +24,7 @@ class Trainer():
       self,
       model,
       agent,
+      config,
       training_set=None,
       validation_set=None,
       test_set=None,
@@ -37,7 +38,7 @@ class Trainer():
     self._test_set = None
     self.set_data(training_set, validation_set, test_set)
     self.round = 0
-    self.th = hub
+    self.th = config
     self.counter = 0
     self.cursor = None
     self.agent = agent
@@ -124,21 +125,31 @@ class Trainer():
   # region : Train
 
   def train(self):
+
+    if self.th.overwrite:
+      self.agent.clear_dirs()
+
     if self.th.load_model:
       # self.model.build(self.th.input_shape)
       self.model.keras_model, self.counter = self.agent.load_model(self.model.mark)
       console.show_status('Model loaded from counter {}'.format(self.counter))
     else:
+      self.model.build(self.th.input_shape)
       tf.summary.trace_on(graph=True, profiler=True)
-      self.model.link(tf.random.uniform((self.th.batch_size, *self.th.input_shape)))
+      # self.model.link(tf.random.uniform((self.th.batch_size, *self.th.input_shape)))
+      # _ = self.model.keras_model(tf.keras.layers.Input(self.th.input_shape))
+      @tf.function
+      def predict(x):
+        return self.model.keras_model(x)
+      predict(tf.random.uniform((self.th.batch_size, *self.th.input_shape)))
       self.agent.write_model_summary()
       tf.summary.trace_off()
-      self.model.build(self.th.input_shape)
       console.show_status('Model built.')
     self.model.keras_model.summary()
 
-    if self.th.overwrite:
-      self.agent.clear_dirs()
+    if self.th.rehearse:
+      return
+
 
     self.agent.create_bash()
 
