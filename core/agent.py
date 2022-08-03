@@ -98,11 +98,22 @@ class Agent(object):
       return None
 
   def write_model_summary(self):
+    # TODO: Use summary, now use plot_model
     if self.summary_writer is None:
       self.summary_writer = tf.summary.create_file_writer(self.log_dir)
     with self.summary_writer.as_default():
       tf.summary.trace_export(name='model_structure', step=0,
                               profiler_outdir=self.log_dir)
+    # tf.keras.utils.plot_model(
+    #   self._model.keras_model,
+    #   to_file=os.path.join(self.log_dir, 'model.png'),
+    #   show_shapes=True,
+    #   show_layer_names=True,
+    #   rankdir='TB',
+    #   expand_nested=False,
+    #   dpi=96,
+    #   # show_layer_activations=True
+    # )
 
   def write_summary(self, name:str, value, step):
     if self.summary_writer is None:
