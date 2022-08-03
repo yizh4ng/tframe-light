@@ -1,3 +1,4 @@
+import numpy as np
 from tensorflow import keras
 import tensorflow as tf
 from tframe import console
@@ -24,12 +25,25 @@ class Model(object):
   def mark(self, mark):
     self._mark = mark
 
+  @property
+  def num_of_parameters(self):
+    trainableParams = int(np.sum(
+      [np.prod(v.get_shape()) for v in self.keras_model.trainable_weights]))
+    nonTrainableParams = int(np.sum(
+      [np.prod(v.get_shape()) for v in self.keras_model.non_trainable_weights]))
+
+    total_paras = trainableParams + nonTrainableParams
+
+    return total_paras
+
+  @tf.function
+  def link(self, input):
+    return self.net(input)
+
   def build(self, input_shape):
     input = tf.keras.layers.Input(input_shape)
     output = self.net(input)
     self.keras_model = keras.Model(inputs=input, outputs=output,
                                    name=self.net.name)
-
-
 
 

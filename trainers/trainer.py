@@ -129,6 +129,10 @@ class Trainer():
       self.model.keras_model, self.counter = self.agent.load_model(self.model.mark)
       console.show_status('Model loaded from counter {}'.format(self.counter))
     else:
+      tf.summary.trace_on(graph=True, profiler=True)
+      self.model.link(tf.random.uniform((self.th.batch_size, *self.th.input_shape)))
+      self.agent.write_model_summary()
+      tf.summary.trace_off()
       self.model.build(self.th.input_shape)
       console.show_status('Model built.')
     self.model.keras_model.summary()
@@ -156,7 +160,7 @@ class Trainer():
   def _outer_loop(self):
     rnd = 0
     self.patenice = self.th.patience
-    for _ in range(self.th.total_outer_loops): #TODO: epcoh num
+    for _ in range(self.th.epoch): #TODO: epcoh num
       rnd += 1
       console.section('round {}:'.format(rnd))
 
@@ -168,6 +172,7 @@ class Trainer():
     console.show_status('Training ends at round {}'.format(rnd), symbol='[Patience]')
 
     if self.th.gather_note:
+      self.agent.note.put_down_criterion('Total Parameters', self.model.num_of_parameters)
       self.agent.note.put_down_criterion('Total Iterations', self.counter)
       self.agent.note.put_down_criterion('Total Rounds', rnd)
       # Evaluate the best model if necessary
@@ -228,6 +233,8 @@ class Trainer():
                                                               show_records=True),
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
+
+    # self.th._stop = True #Test
 
     if self.model.metrics[0].record_appears:
       self.patenice = self.th.patience
