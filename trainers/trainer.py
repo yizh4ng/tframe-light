@@ -28,6 +28,7 @@ class Trainer():
       training_set=None,
       validation_set=None,
       test_set=None,
+      probe=None
   ):
     # Set model for trainer
     self.model = model
@@ -42,6 +43,7 @@ class Trainer():
     self.counter = 0
     self.cursor = None
     self.agent = agent
+    self.probe = probe
 
     # Set callable attributes
 
@@ -137,7 +139,7 @@ class Trainer():
       @tf.function
       def predict(x):
         return self.model.keras_model(x)
-      predict(tf.random.uniform((self.th.batch_size, *self.th.input_shape)))
+      predict(tf.random.uniform((self.th.batch_size, *self.th.non_train_input_shape)))
       self.agent.write_model_summary()
       tf.summary.trace_off()
       console.show_status('Model built.')
@@ -178,6 +180,14 @@ class Trainer():
         break
 
     console.show_status('Training ends at round {}'.format(rnd), symbol='[Patience]')
+
+
+    if self.th.probe_cycle % rnd == 0 and self.probe is not None:
+      assert callable(self.probe)
+      result = self.probe()
+      self.agent.save_fig(result)
+      console.show_status('Results saved to {}.'.format(self.agent.snapshot_dir),
+                          symbol='[Probe]')
 
     if self.th.gather_note:
       self.agent.note.put_down_criterion('Total Parameters', self.model.num_of_parameters)

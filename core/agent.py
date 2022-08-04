@@ -76,6 +76,13 @@ class Agent(object):
     model.save(path)
     self.saved_model_paths.append(path)
 
+  def save_figures(self, figures, file_names):
+    import matplotlib.pyplot as plt
+    for figure, file_name in zip(figures, file_names):
+      save_path = os.path.join(self.snapshot_dir, file_name)
+      if not os.path.exists(save_path):
+        plt.imsave(save_path, figure)
+
   def load_model(self, mark, suffix='.sav'):
     counter = 0
     for root, dirs, files in os.walk(self.ckpt_dir):
@@ -104,16 +111,6 @@ class Agent(object):
     with self.summary_writer.as_default():
       tf.summary.trace_export(name='model_structure', step=0,
                               profiler_outdir=self.log_dir)
-    # tf.keras.utils.plot_model(
-    #   self._model.keras_model,
-    #   to_file=os.path.join(self.log_dir, 'model.png'),
-    #   show_shapes=True,
-    #   show_layer_names=True,
-    #   rankdir='TB',
-    #   expand_nested=False,
-    #   dpi=96,
-    #   # show_layer_activations=True
-    # )
 
   def write_summary(self, name:str, value, step):
     if self.summary_writer is None:
