@@ -170,24 +170,26 @@ class Trainer():
   def _outer_loop(self):
     rnd = 0
     self.patenice = self.th.patience
-    for _ in range(self.th.epoch): #TODO: epcoh num
+    for _ in range(self.th.epoch):
       rnd += 1
       console.section('round {}:'.format(rnd))
 
       self._inner_loop(rnd)
       self.round += 1
+      if rnd % self.th.probe_cycle == 0 and self.th.probe:
+        assert callable(self.probe)
+        results_dict = self.probe()
+        self.agent.save_figures(results_dict)
+        console.show_status(
+          'Results saved to {}.'.format(self.agent.snapshot_dir),
+          symbol='[Probe]')
+
       if self.th._stop:
         break
 
     console.show_status('Training ends at round {}'.format(rnd), symbol='[Patience]')
 
 
-    if self.th.probe_cycle % rnd == 0 and self.probe is not None:
-      assert callable(self.probe)
-      results_dict = self.probe()
-      self.agent.save_figures(results_dict)
-      console.show_status('Results saved to {}.'.format(self.agent.snapshot_dir),
-                          symbol='[Probe]')
 
     if self.th.gather_note:
       self.agent.note.put_down_criterion('Total Parameters', self.model.num_of_parameters)
@@ -252,7 +254,7 @@ class Trainer():
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
-    self.th._stop = True #Test
+    # self.th._stop = True #Test
 
     if self.model.metrics[0].record_appears:
       self.patenice = self.th.patience

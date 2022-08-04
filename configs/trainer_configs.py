@@ -37,6 +37,7 @@ class TrainerConfigs(object):
   print_cycle = Flag.integer(0, 'Print cycle')
   batch_size = Flag.integer(1, 'Batch size', is_key=None, hp_scale='log')
   shuffle = Flag.boolean(True, 'Whether to shuffle', is_key=None)
+  probe = Flag.boolean(False, 'Whether to probe')
   probe_cycle = Flag.integer(0, 'Probe cycle')
   round_name = Flag.string('Epoch', 'Name of outer loop during training')
   patience = Flag.integer(
