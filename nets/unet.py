@@ -30,29 +30,29 @@ class UNet(Net):
       self.kernel_size if expansion_kernel_size is None
       else expansion_kernel_size)
 
-  def Conv2D(self, input, filters, kernel_size):
-    output = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size,
-                                      strides=1, padding='same')(input)
-    if self.use_batchnorm:
-      output = tf.keras.layers.BatchNormalization()(output)
+  def Conv2D(self, filters, kernel_size):
+    def _conv2d(input):
+      output = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size,
+                                        strides=1, padding='same')(input)
+      if self.use_batchnorm:
+        output = tf.keras.layers.BatchNormalization()(output)
 
-    output = tf.keras.layers.Activation(self.activation)(output)
-    return output
+      output = tf.keras.layers.Activation(self.activation)(output)
+      return output
+    return _conv2d
 
   def InputBlock(self, input, filters):
     for _ in range(self.thickness):
-      input = tf.keras.layers.Conv2D(filters=filters, kernel_size=self.contraction_kernel_size,
-                                      strides=1, padding='same',
-                                      activation=self.activation)(input)
+      input = self.Conv2D(filters=filters, kernel_size=self.contraction_kernel_size,
+                                      )(input)
     return input
 
   def ContractingPathBlock(self, input, filters):
     down_sampling = tf.keras.layers.MaxPool2D((2, 2))(input)
     for _ in range(self.thickness):
-      down_sampling = tf.keras.layers.Conv2D(filters=filters,
-                                     kernel_size=self.contraction_kernel_size,
-                                      strides=1, padding='same',
-                                      activation=self.activation)(down_sampling)
+      down_sampling = self.Conv2D(filters=filters,
+                                  kernel_size=self.contraction_kernel_size
+                                  )(down_sampling)
     return down_sampling
 
   def ExpansivePathBlock(self, input, con_feature, filters):
@@ -67,6 +67,9 @@ class UNet(Net):
     else:
       concat_feature = upsampling
     # concat_feature = upsampling
+
+    if self.use_batchnorm:
+      concat_feature = tf.keras.layers.BatchNormalization()(concat_feature)
 
     for _ in range(self.thickness):
       concat_feature = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=
