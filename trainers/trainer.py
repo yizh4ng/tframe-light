@@ -184,8 +184,8 @@ class Trainer():
 
     if self.th.probe_cycle % rnd == 0 and self.probe is not None:
       assert callable(self.probe)
-      result = self.probe()
-      self.agent.save_fig(result)
+      results_dict = self.probe()
+      self.agent.save_figures(results_dict)
       console.show_status('Results saved to {}.'.format(self.agent.snapshot_dir),
                           symbol='[Probe]')
 
