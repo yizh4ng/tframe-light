@@ -60,7 +60,7 @@ class Agent(object):
       if sys.path[0] != ROOT: sys.path.insert(0, ROOT)
     self.job_dir = os.path.join(sys.path[dir_depth - 1])
     self.data_dir = os.path.join(self.job_dir, 'data')
-    self.job_dir += '\{}'.format(self._model.name)
+    self.job_dir = os.path.join(self.job_dir, self._model.name)
     console.show_status('Job directory set to `{}`'.format(self.job_dir))
 
 
@@ -76,10 +76,11 @@ class Agent(object):
     model.save(path)
     self.saved_model_paths.append(path)
 
-  def save_figures(self, figures, file_names):
+  def save_figures(self, figures_dict):
     import matplotlib.pyplot as plt
-    for figure, file_name in zip(figures, file_names):
-      save_path = os.path.join(self.snapshot_dir, file_name)
+    for file_name in figures_dict:
+      figure = figures_dict[file_name]
+      save_path = os.path.join(self.snapshot_dir, file_name + '.png')
       if not os.path.exists(save_path):
         plt.imsave(save_path, figure)
 
