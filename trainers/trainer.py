@@ -195,7 +195,7 @@ class Trainer():
             self.model.mark)
         # Evaluate the specified data sets
         for name, data_set in ds_dict.items():
-          loss_dict = self.validate_model(self.training_set,
+          loss_dict = self.validate_model(data_set,
                                           batch_size=self.th.val_batch_size)
           for key in loss_dict:
             title = '{} {}'.format(name, key.name)
