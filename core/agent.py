@@ -144,8 +144,6 @@ class Agent(object):
     note = self.note
     summary.append(note)
     io_utils.save(summary, file_path)
-    # with open(file_path, 'wb') as f:
-    #   pickle.dump(summary, f, pickle.HIGHEST_PROTOCOL)
 
     # Show status
     console.show_status('Note added to summaries ({} => {}) at `{}`'.format(

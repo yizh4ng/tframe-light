@@ -6,87 +6,27 @@ import sys, os
 import numpy as np
 from tframe import tf
 from collections import OrderedDict
+import time
 
 import tframe as tfr
 from tframe import pedia
 
 from .flag import Flag
-from .advanced_configs import AdvancedConfigs
-from .cloud_configs import CloudConfigs
 from .dataset_configs import DataConfigs
-from .display_configs import DisplayConfig
 from .model_configs import ModelConfigs
-from .monitor_configs import MonitorConfigs
 from .note_configs import NoteConfigs
-from .rnn_configs import RNNConfigs
 from .trainer_configs import TrainerConfigs
 
 
 class Config(
-  AdvancedConfigs,
-  CloudConfigs,
   DataConfigs,
-  DisplayConfig,
   ModelConfigs,
-  MonitorConfigs,
   NoteConfigs,
   TrainerConfigs,
-  RNNConfigs,
 ):
   registered = False
 
-  record_dir = Flag.string('records', 'Root path for records')
-  log_folder_name = Flag.string('logs', '...')
-  ckpt_folder_name = Flag.string('checkpoints', '...')
-  snapshot_folder_name = Flag.string('snapshots', '...')
 
-  job_dir = Flag.string(
-    './records', 'The root directory where the records should be put',
-    name='job-dir')
-  data_dir = Flag.string('', 'The data directory')
-  raw_data_dir = Flag.string(None, 'Raw data directory')
-
-  dtype = Flag.whatever(tf.float32, 'Default dtype for tensors', is_key=None)
-  tb_port = Flag.integer(6006, 'Tensorboard port number')
-  show_structure_detail = Flag.boolean(True, '...')
-
-  # logging will be suppressed if this flag is set to True when agent
-  #   is launching a model
-  suppress_logging = Flag.boolean(
-    True, 'Whether to set logging level down to get rid of the device '
-          'information')
-  progress_bar = Flag.boolean(True, 'Whether to show progress bar')
-
-  keep_trainer_log = Flag.boolean(
-    False, 'Whether to keep trainer logs. Usually be used for probe '
-           'methods')
-
-  # Device related config
-  visible_gpu_id = Flag.string(
-    None, 'CUDA_VISIBLE_DEVICES option', name='gpu_id')
-  allow_growth = Flag.boolean(True, 'tf.ConfigProto().gpu_options.allow_growth')
-  gpu_memory_fraction = Flag.float(
-    0.4, 'config.gpu_options.per_process_gpu_memory_fraction')
-
-  # Other fancy stuff
-  int_para_1 = Flag.integer(None, 'Used to pass an integer parameter using '
-                               ' command line')
-  bool_para_1 = Flag.boolean(False, 'Used to pass a boolean parameter using'
-                                    ' command line')
-  alpha = Flag.float(None, 'Alpha', is_key=None)
-  beta = Flag.float(None, 'Beta', is_key=None)
-  gamma = Flag.float(None, 'Gamma', is_key=None)
-  epsilon = Flag.float(None, 'Epsilon', is_key=None)
-  delta = Flag.float(None, 'Delta', is_key=None)
-
-  developer_code = Flag.string('', 'Code for developers to debug', is_key=None)
-  developer_args = Flag.string(
-    '', 'Args for developers to develop', is_key=None)
-  verbose_config = Flag.string('', 'String for configuring verbosity')
-
-  stats_max_length = Flag.integer(20, 'Maximum length a Statistic can keep')
-
-  allow_activation = Flag.boolean(True, 'Whether to allow activation')
   visualize_tensors = Flag.boolean(
     False, 'Whether to visualize tensors in core')
   visualize_kernels = Flag.boolean(
@@ -94,35 +34,21 @@ class Config(
 
   tensor_dict = Flag.whatever(None, 'Stores tensors for visualization')
 
-  tic_toc = Flag.boolean(False, 'Whether to track time')
+  tic_toc = Flag.boolean(True, 'Whether to track time')
 
   # A dictionary for highest priority setting
   _backdoor = {}
 
-  def __init__(self, as_global=False):
+  def __init__(self):
     # Try to register flags into tensorflow
     if not self.__class__.registered:
       self.__class__.register()
-
-    if as_global:
-      tfr.hub.redirect(self)
+    self._time_stamp = {'__start_time': None}
 
   # region : Properties
-
   @property
-  def use_dynamic_ground_truth(self):
-    return callable(self.dynamic_ground_truth_generator)
-
-  @property
-  def should_create_path(self):
-    if tfr.hub.rehearse: return True
-    return (self.train or self.dynamic_evaluation) and not self.on_cloud
-
-  @property
-  def np_dtype(self):
-    if self.dtype is tf.float32: return np.float32
-    elif self.dtype is tf.float64: return np.float64
-    raise ValueError
+  def start_time(self):
+    return self._time_stamp['__start_time']
 
   @property
   def key_options(self):
@@ -135,16 +61,6 @@ class Config(
         ko[name] = attr.value
     return ko
 
-  @property
-  def config_strings(self):
-    return sorted(['{}: {}'.format(k, v) for k, v in self.key_options.items()])
-
-  @property
-  def developer_options(self):
-    if not self.developer_args: return None
-    from tframe.utils.arg_parser import Parser
-    parser = Parser.parse(self.developer_args)
-    return parser
 
   # endregion : Properties
 
@@ -199,22 +115,6 @@ class Config(
 
   # endregion : Override
 
-  # region : Public Methods
-
-  def config_dir(self, dir_depth=2):
-    """This method should be called only in XX_core.py module for setting
-       default job_dir and data_dir.
-    """
-    self.job_dir = os.path.join(sys.path[dir_depth - 1])
-    self.data_dir = os.path.join(self.job_dir, 'data')
-    tfr.console.show_status('Job directory set to `{}`'.format(self.job_dir))
-
-  @staticmethod
-  def decimal_str(num, decimals=3):
-    assert np.isscalar(num)
-    assert isinstance(decimals, int) and decimals > 0
-    fmt = '{:.' + str(decimals) + 'f}'
-    return fmt.format(num)
 
   @classmethod
   def register(cls):
@@ -225,44 +125,7 @@ class Config(
       elif flag.name is None: flag.name = name
     cls.registered = True
 
-  def redirect(self, config):
-    """Redirect self to config"""
-    assert isinstance(config, Config)
 
-    # flag_names = [name for name, value in self.__dict__.items()
-    #               if isinstance(value, Flag)]
-
-    flag_names = [name for name in config.__dir__()
-                  if hasattr(config, name) and
-                  isinstance(object.__getattribute__(config, name), Flag)]
-    for name in flag_names:
-      # value = getattr(config, name)
-      # Set flag to self
-
-      object.__setattr__(self, name, config.get_flag(name))
-
-      # Assign value to self.flag
-      # self.__setattr__(name, value)
-
-  def smooth_out_conflicts(self):
-    self.smooth_out_cloud_configs()
-    self.smooth_out_monitor_configs()
-    self.smooth_out_note_configs()
-    self.smooth_out_model_configs()
-    self.smooth_out_trainer_configs()
-
-    if self.export_dl_dx or self.export_dl_ds_stat:
-      # TODO: these 2 options should be used carefully,
-      #       since sequences with different lengths may yield
-      #       incorrect result
-      self.allow_loss_in_loop = True
-    if self.prune_on and self.pruning_iterations > 0:
-      self.overwrite = False
-    if self.export_weight_grads:
-      # TODO: These 2 configs could be merged as one
-      self.monitor_weight_grads = True
-    if self.etch_on:
-      self.monitor_weight_grads = True
 
   def get_attr(self, name):
     return object.__getattribute__(self, name)
@@ -273,19 +136,17 @@ class Config(
       raise TypeError('!! flag {} not found'.format(name))
     return flag
 
-  def get_optimizer(self, optimizer=None):
-    """Get tframe optimizer (based on tensorflow optimizer). """
-    from tframe.optimizers.optimizer import Optimizer
-
-    if optimizer is None:
-      assert not any([self.optimizer is None, self.learning_rate is None])
-      optimizer = self.optimizer
-      tfr.console.show_status(
-        'Optimizer defined in trainer hub is used.', '++')
-
-    return Optimizer.get_optimizer(optimizer)
 
   # endregion : Public Methods
+
+
+  def tic(self, key='__start_time'):
+    self._time_stamp[key] = time.time()
+
+
+  def toc(self, key='__start_time'):
+    assert self._time_stamp[key] is not None
+    return time.time() - self._time_stamp[key]
 
 
 Config.register()

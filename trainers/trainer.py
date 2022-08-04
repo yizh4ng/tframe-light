@@ -114,10 +114,6 @@ class Trainer():
     content += self._dict_to_string(loss_dict)
 
     # Show time elapsed for a single update if required
-    if self.th.tic_toc:
-      # Here the key for toc should be taken care of
-      # TODO: note that print progress may take a lot of time
-      content += ' ({:.1f}ms)'.format(self.th.toc('__update') * 1000)
 
     self._inter_cut(i, total, content, prompt='[Train]', start_time=self.th.start_time)
   # endregion : Public Methods
@@ -125,7 +121,7 @@ class Trainer():
   # region : Train
 
   def train(self):
-
+    # :: Before training
     if self.th.overwrite:
       self.agent.clear_dirs()
 
@@ -146,12 +142,13 @@ class Trainer():
       tf.summary.trace_off()
       console.show_status('Model built.')
     self.model.keras_model.summary()
+    self.agent.create_bash()
 
+    # :: During training
     if self.th.rehearse:
       return
 
 
-    self.agent.create_bash()
 
     rounds = self._outer_loop()
 
@@ -245,7 +242,7 @@ class Trainer():
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
-    # self.th._stop = True #Test
+    self.th._stop = True #Test
 
     if self.model.metrics[0].record_appears:
       self.patenice = self.th.patience

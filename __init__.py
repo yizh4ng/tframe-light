@@ -9,6 +9,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import sys, os
 import numpy as np
 import tensorflow as tf
+# tf.config.run_functions_eagerly(False)
 
 # [VP] the code block below is used for making tframe compatible with
 #   tensorflow 2.*. All modules related to tframe using tensorflow are
@@ -26,5 +27,7 @@ from .utils import local
 from tframe.data.dataset import DataSet
 
 # from .trainers.smartrainer import SmartTrainerHub as DefaultHub
-from .configs.trainerhub import TrainerHub as DefaultHub
-hub = DefaultHub()
+# from .configs.trainerhub import TrainerHub as DefaultHub
+from .configs.config_base import Config as DefaultHub
+# Disable global hub
+# hub = DefaultHub()

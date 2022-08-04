@@ -52,11 +52,10 @@ class TrainerHub(Config):
 
   # endregion : Class Attributes
 
-  def __init__(self, trainer=None, as_global=False):
+  def __init__(self):
     # Call parent's constructor
-    Config.__init__(self, as_global)
+    Config.__init__(self)
 
-    self.trainer = trainer
     self.record_rnd = 0
     # metric log is a list of list
     self.metric_log = []
