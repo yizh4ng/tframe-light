@@ -166,8 +166,8 @@ class Trainer():
     self.model.keras_model, _ = self.agent.load_model(self.model.mark)
     if self.probe:
       results_dict = self.probe()
-      for key in results_dict:
-        results_dict['Final_'+key] = results_dict.pop[key]
+      for key in list(results_dict.keys()):
+        results_dict['Final_'+key] = results_dict.pop(key)
       self.agent.save_figures(results_dict)
       console.show_status(
         'Final Results saved to {}.'.format(self.agent.snapshot_dir),
@@ -263,7 +263,7 @@ class Trainer():
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
-    # self.th._stop = True #Test
+    self.th._stop = True #Test
 
     if self.model.metrics[0].record_appears:
       self.patenice = self.th.patience
