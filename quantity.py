@@ -78,3 +78,20 @@ class Accraucy(Quantity):
   def function(self, predictions, targets):
     return metrics.Accuracy()(tf.argmax(predictions, 1),
                                 tf.argmax(targets, 1))
+
+class GlobalBalancedError(Quantity):
+  def __init__(self):
+    super(GlobalBalancedError, self).__init__('GBE', True)
+
+  def function(self, y_predict, y_true):
+    reduce_axis = list(range(1, len(y_true.shape)))
+
+    # Define similarity ratio
+    _min = tf.minimum(y_true, y_predict)
+    _max = tf.maximum(y_true, y_predict)
+    sr = _min / tf.maximum(_max, 1e-6)
+    tp = tf.reduce_sum(sr * y_true, axis=reduce_axis)
+
+    # Calculate F1 score
+    return tf.reduce_mean(1 - 2 * tp / tf.maximum(
+      tf.reduce_sum(y_true + y_predict, axis=reduce_axis), 1e-6))
