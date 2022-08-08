@@ -163,7 +163,15 @@ class Trainer():
     if self.th.gather_note:
       self.agent.gather_to_summary()
 
-
+    self.model.keras_model, _ = self.agent.load_model(self.model.mark)
+    if self.probe:
+      results_dict = self.probe()
+      for key in results_dict:
+        results_dict['Final_'+key] = results_dict.pop[key]
+      self.agent.save_figures(results_dict)
+      console.show_status(
+        'Final Results saved to {}.'.format(self.agent.snapshot_dir),
+        symbol='[Probe]')
 
   # region : During training
 
@@ -222,6 +230,7 @@ class Trainer():
     for i, batch in enumerate(self.training_set.gen_batches(
         self.th.batch_size, updates_per_round =self.th.updates_per_round,
         shuffle=self.th.shuffle, is_training=True)):
+
       self.cursor += 1
       self.counter += 1
       # Update model
@@ -235,7 +244,7 @@ class Trainer():
                                      batch_size=self.th.val_batch_size)
      self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='train')
 
-     console.show_status('Train set: ' +self._dict_to_string(loss_dict, show_records=True), symbol='[Validation]')
+     console.show_status('Train set: ' +self._dict_to_string(loss_dict, show_records=False), symbol='[Validation]')
 
     loss_dict = self.validate_model(self.validation_set,
                                     batch_size=self.th.val_batch_size,
@@ -250,7 +259,7 @@ class Trainer():
       loss_dict = self.validate_model(self.test_set,
                                       batch_size=self.th.val_batch_size)
       console.show_status('Test set: ' + self._dict_to_string(loss_dict,
-                                                              show_records=True),
+                                                              show_records=False),
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
