@@ -44,6 +44,7 @@ class Trainer():
     self.cursor = None
     self.agent = agent
     self.probe = probe
+    self.optimizer = Adam(self.th.learning_rate)
 
     # Set callable attributes
 
@@ -104,7 +105,8 @@ class Trainer():
     assert isinstance(dict_, dict)
     string_array = []
     for k, v in dict_.items():
-      string = '{} = {:.3f}'.format(k.name, v)
+      _v = tf.reduce_mean(v)
+      string = '{} = {:.3f}'.format(k.name, _v)
       if k.record_appears and show_records:
         string +=' [New Record]'
       string_array.append(string)
@@ -164,7 +166,7 @@ class Trainer():
       self.agent.gather_to_summary()
 
     self.model.keras_model, _ = self.agent.load_model(self.model.mark)
-    if self.probe:
+    if self.th.probe:
       results_dict = self.probe()
       for key in list(results_dict.keys()):
         results_dict['Final_'+key] = results_dict.pop(key)
@@ -263,7 +265,7 @@ class Trainer():
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
-    self.th._stop = True #Test
+    # self.th._stop = True #Test
 
     if self.model.metrics[0].record_appears:
       self.patenice = self.th.patience
@@ -349,7 +351,7 @@ class Trainer():
       for metric in self.model.metrics:
         loss_dict[metric] = metric(prediction, target)
     grads = tape.gradient(loss, self.model.keras_model.trainable_variables)
-    Adam(learning_rate=self.th.learning_rate).apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
+    self.optimizer.apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
     return loss_dict
 
   def validate_model(self, data_set:TFRData, batch_size=None, update_record=False):
@@ -365,9 +367,9 @@ class Trainer():
       prediction = self.model.keras_model(feature)
       loss = self.model.loss(prediction, target)
 
-      _loss_dict[self.model.loss] += loss * data_batch.size / data_set.size
+      _loss_dict[self.model.loss] += tf.reduce_mean(loss) * data_batch.size / data_set.size
       for metric in self.model.metrics:
-        _loss_dict[metric] += metric(prediction, target)\
+        _loss_dict[metric] += tf.reduce_mean(metric(prediction, target))\
                                  * data_batch.size / data_set.size
     if update_record:
       self.model.loss.try_set_record(_loss_dict[self.model.loss])
