@@ -93,5 +93,19 @@ class GlobalBalancedError(Quantity):
     tp = tf.reduce_sum(sr * y_true, axis=reduce_axis)
 
     # Calculate F1 score
-    return tf.reduce_mean(1 - 2 * tp / tf.maximum(
-      tf.reduce_sum(y_true + y_predict, axis=reduce_axis), 1e-6))
+    return 1 - 2 * tp / tf.maximum(
+      tf.reduce_sum(y_true + y_predict, axis=reduce_axis), 1e-6)
+
+class WMAE(Quantity):
+  def __init__(self, min_weight=0.0001):
+    super(WMAE, self).__init__('WMAE', True)
+    self.min_weight = min_weight
+
+  def function(self, y_predict, y_true):
+    reduce_axis = list(range(1, len(y_true.shape)))
+    weights = tf.maximum(y_true, self.min_weight)
+    weights = tf.cast(weights, dtype=tf.float32)
+    nume = tf.reduce_sum(tf.abs(y_true - y_predict) * weights,
+                         axis=reduce_axis)
+    deno = tf.reduce_sum(weights, axis=reduce_axis)
+    return tf.divide(nume, deno)
