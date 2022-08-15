@@ -11,15 +11,14 @@ from tframe.data.dataset import DataSet
 from typing import Optional
 
 
-def image_augmentation_processor(
+def image_augmentation_processor(aug_config,
     data_batch: DataSet, is_training: bool, proceed_target: bool = False):
   # Get hub
-  th = tfr.hub
-  if not is_training or th.aug_config is None: return data_batch
+  if not is_training or aug_config is None: return data_batch
   # Parse augmentation setting
-  assert isinstance(th.aug_config, str)
-  if th.aug_config in ('-', 'x'): return data_batch
-  configs = [Parser.parse(s) for s in th.aug_config.split('|')]
+  assert isinstance(aug_config, str)
+  if aug_config in ('-', 'x'): return data_batch
+  configs = [Parser.parse(s) for s in aug_config.split('|')]
   if len(configs) == 0: return data_batch
 
   # Apply each method according to configs
