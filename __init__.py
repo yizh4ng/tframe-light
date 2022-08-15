@@ -31,3 +31,7 @@ from tframe.data.dataset import DataSet
 from .configs.config_base import Config as DefaultHub
 # Disable global hub
 # hub = DefaultHub()
+
+def set_random_seed(seed=26):
+  np.random.seed(seed)
+  tf.random.set_seed(seed)
