@@ -186,7 +186,7 @@ class Trainer():
 
       self._inner_loop(rnd)
       self.round += 1
-      if rnd % self.th.probe_cycle == 0 and self.th.probe:
+      if self.th.probe and rnd % self.th.probe_cycle == 0:
         assert callable(self.probe)
         results_dict = self.probe()
         self.agent.save_figures(results_dict)
