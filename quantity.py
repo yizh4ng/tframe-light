@@ -15,16 +15,6 @@ class Quantity():
       self._record = defaultdict(lambda: np.inf, {})
     else:
       self._record = defaultdict(lambda: -np.inf, {})
-    # self._record = {}
-
-
-  # def record(self, dataset):
-  #   if self._record[dataset] is None:
-  #     if self._smaller_is_better:
-  #       self._record[dataset] = np.inf
-  #     else:
-  #       self._record[dataset] = -np.inf
-  #   return self._record[dataset]
 
   @property
   def smaller_is_better(self):
@@ -33,10 +23,6 @@ class Quantity():
   @property
   def larger_is_better(self):
     return not self._smaller_is_better
-
-  # @property
-  # def record_appears(self, data_set):
-  #   return self._record_appears[data_set]
 
   def try_set_record(self, value, dataset):
     self._record_appears[dataset] = False
