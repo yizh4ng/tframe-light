@@ -57,7 +57,8 @@ class UNet(Net):
 
   def ContractingPathBlock(self, input, filters):
     if self.use_maxpool:
-      down_sampling = tf.keras.layers.MaxPool2D((2, 2))(input)
+      down_sampling = tf.keras.layers.MaxPool2D((2, 2), strides=2,
+                                                padding='same')(input)
     else:
       down_sampling = tf.keras.layers.Conv2D(filters=filters/2,
                                              kernel_size=self.contraction_kernel_size,
