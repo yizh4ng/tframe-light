@@ -441,53 +441,67 @@ class DataSet(TFRData, Nomear):
     self.properties[self.GROUPS] = groups
 
 
-  def get_classes(self, *class_indices):
-    """Get specific types of data"""
-    indices = []
-    for i in class_indices: indices.extend(self.groups[i])
-    data_set = self[indices]
-    # Set corresponding properties
-    data_set.properties[self.NUM_CLASSES] = len(class_indices)
-    # data_set is in one-hot format
-    if self.target_is_onehot:
-      data_set.targets = data_set.targets[:, np.array(class_indices)]
-    # Set group names
-    if pedia.classes in data_set.properties:
-      group_names = data_set.properties[pedia.classes]
-      data_set.properties[pedia.classes] = [
-        group_names[i] for i in class_indices]
-    # Clear dense label
-    if self.DENSE_LABELS in self.data_dict:
-      self.data_dict.pop(self.DENSE_LABELS)
-    # Refresh groups
-    data_set.refresh_groups()
-    return data_set
+  def sub_groups(self, key='targets'):
+    assert key in self.data_dict.keys()
+
+    targets = set(self.data_dict[key].flatten())
+    indices_groups = []
+
+    for target in targets:
+      indices_groups.append([i for i,x in enumerate(self.data_dict[key])
+                             if x == target])
+
+    return [self[indices] for indices in indices_groups]
 
 
-  def merge_classes(self, *class_indices):
-    """Merge 2 classes and put them at the end of class list"""
-    target_is_onehot = self.target_is_onehot
-    # (self.properties[pedia.classes] is shared across instances)
-    self.properties[pedia.classes] = self.properties[pedia.classes].copy()
-    # Update group and class name
-    indices = []
-    names_to_merge = []
-    for i in reversed(sorted(class_indices)):
-      indices.extend(self.properties[self.GROUPS].pop(i))
-      names_to_merge.append(self.properties[pedia.classes].pop(i))
-    self.properties[self.GROUPS].append(indices)
-    self.properties[pedia.classes].append('/'.join(names_to_merge))
-    # Set num classes
-    self.properties[self.NUM_CLASSES] = len(self.properties[self.GROUPS])
-    # Generate labels
-    labels = np.zeros(shape=self.size, dtype=int)
-    for i, group in enumerate(self.groups): labels[np.array(group)] = i
-    # Set targets
-    if target_is_onehot:
-      self.targets = misc.convert_to_one_hot(labels, self.num_classes)
-    else: self.targets = labels
 
-    return self
+  # def get_classes(self, *class_indices):
+  #   """Get specific types of data"""
+  #   indices = []
+  #   for i in class_indices: indices.extend(self.groups[i])
+  #   data_set = self[indices]
+  #   # Set corresponding properties
+  #   data_set.properties[self.NUM_CLASSES] = len(class_indices)
+  #   # data_set is in one-hot format
+  #   if self.target_is_onehot:
+  #     data_set.targets = data_set.targets[:, np.array(class_indices)]
+  #   # Set group names
+  #   if pedia.classes in data_set.properties:
+  #     group_names = data_set.properties[pedia.classes]
+  #     data_set.properties[pedia.classes] = [
+  #       group_names[i] for i in class_indices]
+  #   # Clear dense label
+  #   if self.DENSE_LABELS in self.data_dict:
+  #     self.data_dict.pop(self.DENSE_LABELS)
+  #   # Refresh groups
+  #   data_set.refresh_groups()
+  #   return data_set
+
+
+  # def merge_classes(self, *class_indices):
+  #   """Merge 2 classes and put them at the end of class list"""
+  #   target_is_onehot = self.target_is_onehot
+  #   # (self.properties[pedia.classes] is shared across instances)
+  #   self.properties[pedia.classes] = self.properties[pedia.classes].copy()
+  #   # Update group and class name
+  #   indices = []
+  #   names_to_merge = []
+  #   for i in reversed(sorted(class_indices)):
+  #     indices.extend(self.properties[self.GROUPS].pop(i))
+  #     names_to_merge.append(self.properties[pedia.classes].pop(i))
+  #   self.properties[self.GROUPS].append(indices)
+  #   self.properties[pedia.classes].append('/'.join(names_to_merge))
+  #   # Set num classes
+  #   self.properties[self.NUM_CLASSES] = len(self.properties[self.GROUPS])
+  #   # Generate labels
+  #   labels = np.zeros(shape=self.size, dtype=int)
+  #   for i, group in enumerate(self.groups): labels[np.array(group)] = i
+  #   # Set targets
+  #   if target_is_onehot:
+  #     self.targets = misc.convert_to_one_hot(labels, self.num_classes)
+  #   else: self.targets = labels
+  #
+    # return self
 
 
   def split_k_fold(self, K: int, i: int):
