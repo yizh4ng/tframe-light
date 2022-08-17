@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.keras.losses as losses
 import tensorflow.keras.metrics as metrics
+from collections import defaultdict
 
 
 
@@ -9,11 +10,21 @@ class Quantity():
   def __init__(self, name, smaller_is_better):
     self.name = name
     self._smaller_is_better = smaller_is_better
-    if self._smaller_is_better:
-      self.record = np.inf
+    self._record_appears = defaultdict(lambda:False, {})
+    if self.smaller_is_better:
+      self._record = defaultdict(lambda: np.inf, {})
     else:
-      self.record = -np.inf
-    self._record_appears = False
+      self._record = defaultdict(lambda: -np.inf, {})
+    # self._record = {}
+
+
+  # def record(self, dataset):
+  #   if self._record[dataset] is None:
+  #     if self._smaller_is_better:
+  #       self._record[dataset] = np.inf
+  #     else:
+  #       self._record[dataset] = -np.inf
+  #   return self._record[dataset]
 
   @property
   def smaller_is_better(self):
@@ -23,20 +34,20 @@ class Quantity():
   def larger_is_better(self):
     return not self._smaller_is_better
 
-  @property
-  def record_appears(self):
-    return self._record_appears
+  # @property
+  # def record_appears(self, data_set):
+  #   return self._record_appears[data_set]
 
-  def try_set_record(self, value):
-    self._record_appears = False
+  def try_set_record(self, value, dataset):
+    self._record_appears[dataset] = False
     if self.smaller_is_better:
-      if value < self.record:
-        self.record = value
-        self._record_appears = True
+      if value < self._record[dataset]:
+        self._record[dataset] = value
+        self._record_appears[dataset] = True
     else:
-      if value > self.record:
-        self.record = value
-        self._record_appears = True
+      if value > self._record[dataset]:
+        self._record[dataset] = value
+        self._record_appears[dataset] = True
 
   def __call__(self, predictions, targets):
     assert predictions.shape == targets.shape
@@ -68,7 +79,9 @@ class CrossEntropy(Quantity):
     super(CrossEntropy, self).__init__('CrossEntropy', True)
 
   def function(self, predictions, targets):
-    return tf.losses.CategoricalCrossentropy()(predictions, targets)
+    return tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(labels=targets,
+                                                                logits=predictions)
+    # return tf.losses.CategoricalCrossentropy()(predictions, targets)
 
 
 class Accraucy(Quantity):

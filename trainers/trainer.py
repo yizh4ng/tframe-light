@@ -101,13 +101,13 @@ class Trainer():
       console.print_progress(progress=progress, start_time=start_time)
 
   @staticmethod
-  def _dict_to_string(dict_, show_records=False):
+  def _dict_to_string(dict_, data_set):
     assert isinstance(dict_, dict)
     string_array = []
     for k, v in dict_.items():
       _v = tf.reduce_mean(v)
       string = '{} = {:.3f}'.format(k.name, _v)
-      if k.record_appears and show_records:
+      if k._record_appears[data_set]:
         string +=' [New Record]'
       string_array.append(string)
     return ', '.join(string_array)
@@ -115,7 +115,7 @@ class Trainer():
   def _print_progress(self, i, total, rnd, loss_dict):
     content = '{} {} '.format(
       self.th.round_name, rnd, loss_dict)
-    content += self._dict_to_string(loss_dict)
+    content += self._dict_to_string(loss_dict, self.training_set)
 
     # Show time elapsed for a single update if required
 
@@ -246,28 +246,27 @@ class Trainer():
                                      batch_size=self.th.val_batch_size)
      self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='train')
 
-     console.show_status('Train set: ' +self._dict_to_string(loss_dict, show_records=False), symbol='[Validation]')
+     console.show_status('Train set: ' +self._dict_to_string(loss_dict, self.training_set), symbol='[Validation]')
 
     loss_dict = self.validate_model(self.validation_set,
-                                    batch_size=self.th.val_batch_size,
-                                    update_record=True)
+                                    batch_size=self.th.val_batch_size)
     self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='validation')
 
     console.show_status('Validation set: ' + self._dict_to_string(loss_dict,
-                                                                  show_records=True),
+                                                                  self.validation_set),
                         symbol='[Validation]')
 
     if self.th.validate_test_set:
       loss_dict = self.validate_model(self.test_set,
                                       batch_size=self.th.val_batch_size)
       console.show_status('Test set: ' + self._dict_to_string(loss_dict,
-                                                              show_records=False),
+                                                              self.test_set),
                           symbol='[Validation]')
       self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='test')
 
     # self.th._stop = True #Test
 
-    if self.model.metrics[0].record_appears:
+    if self.model.metrics[0]._record_appears[self.validation_set]:
       self.patenice = self.th.patience
       console.show_status('Record appears', symbol='[Patience]')
       if self.th.save_model:
@@ -354,7 +353,7 @@ class Trainer():
     self.optimizer.apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
     return loss_dict
 
-  def validate_model(self, data_set:TFRData, batch_size=None, update_record=False):
+  def validate_model(self, data_set:TFRData, batch_size=None):
     _loss_dict = {}
     _loss_dict[self.model.loss] = 0
     for metric in self.model.metrics:
@@ -371,10 +370,10 @@ class Trainer():
       for metric in self.model.metrics:
         _loss_dict[metric] += tf.reduce_mean(metric(prediction, target))\
                                  * data_batch.size / data_set.size
-    if update_record:
-      self.model.loss.try_set_record(_loss_dict[self.model.loss])
-      for metric in self.model.metrics:
-        metric.try_set_record(_loss_dict[metric])
+    # if update_record:
+    self.model.loss.try_set_record(_loss_dict[self.model.loss], data_set)
+    for metric in self.model.metrics:
+      metric.try_set_record(_loss_dict[metric], data_set)
     return _loss_dict
 
 
