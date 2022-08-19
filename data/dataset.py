@@ -47,7 +47,7 @@ class DataSet(TFRData, Nomear):
     # Sanity checks
     self._check_data()
 
-    # Indices
+    # Indices for generating batches
     self.indices = None
     self._ordered_indices = np.array(list(range(self.size)))
 
@@ -139,17 +139,17 @@ class DataSet(TFRData, Nomear):
     if self.is_rnn_input: return self
     return self._convert_to_rnn_input(training=False)
 
-  @property
-  def feature_mean(self):
-    from tframe.data.sequences.seq_set import SequenceSet
-    assert not isinstance(self, SequenceSet)
-    return np.mean(self.features, axis=0)
-
-  @property
-  def feature_std(self):
-    from tframe.data.sequences.seq_set import SequenceSet
-    assert not isinstance(self, SequenceSet)
-    return np.std(self.features, axis=0)
+  # @property
+  # def feature_mean(self):
+  #   from tframe.data.sequences.seq_set import SequenceSet
+  #   assert not isinstance(self, SequenceSet)
+  #   return np.mean(self.features, axis=0)
+  #
+  # @property
+  # def feature_std(self):
+  #   from tframe.data.sequences.seq_set import SequenceSet
+  #   assert not isinstance(self, SequenceSet)
+  #   return np.std(self.features, axis=0)
 
   # endregion : Properties
 
@@ -344,7 +344,7 @@ class DataSet(TFRData, Nomear):
 
   # region : Public Methods
 
-  def split(self, *sizes, names=None, over_classes=False, random=False):
+  '''def split(self, *sizes, names=None, over_classes=False, random=False):
     """If over_classes is True, sizes are for each group, and this works only
        for uniform dataset.
     """
@@ -416,44 +416,129 @@ class DataSet(TFRData, Nomear):
       data_sets += (data_set,)
       cursor += size
 
-    return data_sets
+    return data_sets'''
 
 
-  def refresh_groups(self, target_key='targets'):
-    # TODO: this method is overlapping with self.dense_labels property
-    #       try to fix it.
-    # Sanity check
-    if self.num_classes is None:
-      raise AssertionError('!! DataSet should have known # classes')
-    targets = self[target_key]
-    if targets is None:
-      raise AssertionError('!! Can not find targets with key `{}`'.format(
-        target_key))
-    # Handle sequence summary situation
-    if isinstance(targets, (list, tuple)):
-      targets = np.concatenate(targets, axis=0)
-    dense_labels = misc.convert_to_dense_labels(targets)
-    groups = []
-    for i in range(self.num_classes):
-      # Find samples of class i and append to groups
-      samples = list(np.argwhere([j == i for j in dense_labels]).ravel())
-      groups.append(samples)
-    self.properties[self.GROUPS] = groups
+  def shuffle(self):
+    indices = np.arange(self.size)
+    np.random.shuffle(indices)
+    return self[indices]
+
+  def split(self, sizes, names, random=False, over_key=None):
+    for i, size in enumerate(sizes):
+      if 0 < size and size < 1:
+        sizes[i] = size * self.size
+
+    assert np.sum(sizes) < self.size
+    assert len(names) == len(sizes) + 1
+
+    if random:
+      self.shuffle()
+
+    indices_group = []
+    if over_key is None:
+      start_index = 0
+      for size in sizes:
+        indices_group.append(np.arange(start_index, start_index + size))
+        start_index += size
+
+      indices_group.append(np.arange(start_index, self.size))
+    else:
+      indices_groups = self.indices_groups(over_key)
+      num_groups = len(indices_groups)
+      groups_weights = [len(indices_group)/self.size
+                        for indices_group in indices_groups]
+      start_index = [0] * num_groups
+
+      indices = [[] for _ in range(len(sizes) + 1)]
+
+      for i, indices_group in enumerate(indices_groups):
+        for j, indice in enumerate(indices):
+          if j < len(sizes):
+            indice.extend((np.array(indices_group)[np.arange(start_index[i], start_index[i] + np.ceil(sizes[j] * groups_weights[i])).astype(int)]).astype(int))
+            start_index[i] = start_index[i] + np.ceil(sizes[j] * groups_weights[i])
+          else:
+            indice.extend((np.array(indices_group)[np.arange(start_index[i], len(indices_group)).astype(int)]).astype(int))
+
+      indices_group = indices
 
 
-  def sub_groups(self, key='targets'):
-    assert key in self.data_dict.keys()
 
-    targets = set(self.data_dict[key].flatten())
+    datasets = []
+
+    for i, indices in enumerate(indices_group):
+      dataset = self[indices]
+      dataset.name = names[i]
+      datasets.append(dataset)
+
+    return datasets
+
+
+  # def refresh_groups(self, target_key='targets'):
+  #   # TODO: this method is overlapping with self.dense_labels property
+  #   #       try to fix it.
+  #   # Sanity check
+  #   if self.num_classes is None:
+  #     raise AssertionError('!! DataSet should have known # classes')
+  #   targets = self[target_key]
+  #   if targets is None:
+  #     raise AssertionError('!! Can not find targets with key `{}`'.format(
+  #       target_key))
+  #   # Handle sequence summary situation
+  #   if isinstance(targets, (list, tuple)):
+  #     targets = np.concatenate(targets, axis=0)
+  #   dense_labels = misc.convert_to_dense_labels(targets)
+  #   groups = []
+  #   for i in range(self.num_classes):
+  #     # Find samples of class i and append to groups
+  #     samples = list(np.argwhere([j == i for j in dense_labels]).ravel())
+  #     groups.append(samples)
+  #   self.properties[self.GROUPS] = groups
+
+
+  def indices_group(self, key, value):
+    assert key in self.properties.keys()
+    data = self.properties[key]
+
+    indices = [i for i,x in enumerate(data)
+               if x == value]
+    return indices
+
+  def indices_groups(self, key):
+    assert key in self.properties.keys()
+    targets = set(self.properties[key])
+    data = self.properties[key]
     indices_groups = []
 
     for target in targets:
-      indices_groups.append([i for i,x in enumerate(self.data_dict[key])
+      indices_groups.append([i for i, x in enumerate(data)
                              if x == target])
+    return indices_groups
 
+  def sub_groups(self, key):
+    assert key in self.properties.keys()
+    indices_groups = self.indices_groups(key)
     return [self[indices] for indices in indices_groups]
 
+  def sub_group(self, value, key):
+    assert key in self.properties.keys()
+    indices = self.indices_group(value, key)
+    return self[indices]
 
+  def report(self):
+    print(f'Report Dataset Details on {self.name}:')
+    for key in self.properties.keys():
+
+      if isinstance(self.properties[key], (str, int, float)):
+        print(f':: {key}: {self.properties[key]}')
+      elif isinstance(self.properties[key], (list, tuple, np.ndarray)):
+        targets = set(self.properties[key])
+        print(f':: In the dimenstion of {key}:')
+        group = self.sub_groups(key)
+        for i, target in enumerate(targets):
+          print(f':::: {target} has {group[i].size}')
+      else:
+        print(f'unknown type {type(self.properties[key])} for {key}.')
 
   # def get_classes(self, *class_indices):
   #   """Get specific types of data"""
@@ -501,7 +586,7 @@ class DataSet(TFRData, Nomear):
   #     self.targets = misc.convert_to_one_hot(labels, self.num_classes)
   #   else: self.targets = labels
   #
-    # return self
+  # return self
 
 
   def split_k_fold(self, K: int, i: int):
@@ -528,13 +613,13 @@ class DataSet(TFRData, Nomear):
 
     if indices is not None:
       for k, v in self.properties.items():
-        if isinstance(v, tuple) and len(v) == self.size:
+        if isinstance(v, (tuple, list, np.ndarray)) and len(v) == self.size:
           data_set.properties[k] = self._get_subset(v, indices)
 
     # Groups should not be passed to subset
-    data_set.properties.pop(self.GROUPS, None)
-    if self.num_classes is not None and 'targets' in self.data_dict.keys():
-      data_set.refresh_groups()
+    # data_set.properties.pop(self.GROUPS, None)
+    # if self.num_classes is not None and 'targets' in self.data_dict.keys():
+    #   data_set.refresh_groups()
     return data_set
 
   def _select(self, batch_index, batch_size, upper_bound=None, training=False,
