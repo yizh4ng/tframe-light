@@ -139,19 +139,6 @@ class DataSet(TFRData, Nomear):
     if self.is_rnn_input: return self
     return self._convert_to_rnn_input(training=False)
 
-  # @property
-  # def feature_mean(self):
-  #   from tframe.data.sequences.seq_set import SequenceSet
-  #   assert not isinstance(self, SequenceSet)
-  #   return np.mean(self.features, axis=0)
-  #
-  # @property
-  # def feature_std(self):
-  #   from tframe.data.sequences.seq_set import SequenceSet
-  #   assert not isinstance(self, SequenceSet)
-  #   return np.std(self.features, axis=0)
-
-  # endregion : Properties
 
   # region : Overriden Methods
 
@@ -187,22 +174,6 @@ class DataSet(TFRData, Nomear):
 
     elif num_steps is None:
       round_len = np.ceil(self.size / batch_size)
-    # else:
-    #   if self.is_rnn_input:
-    #     if num_steps < 0: num_steps = self.total_steps
-    #     round_len = np.ceil(self.total_steps / num_steps)
-    #   else:
-    #     if num_steps < 0: round_len = 1
-    #     elif training and hub.random_sample_length is not None:
-    #       # This branch is under testing
-    #       L = checker.check_positive_integer(hub.random_sample_length)
-    #       round_len = int(np.ceil(L / num_steps))
-    #     else:
-    #       # e.g. PTB
-    #       M, N, p = self.size, batch_size, hub.overlap_pct if training else 0
-    #       assert 0 <= p < 1
-    #       L = int(M/((N - 1)*(1 - p) + 1))
-    #       round_len = int(np.ceil(L / num_steps))
 
       round_len = int(round_len)
       if training: self._set_dynamic_round_len(round_len)
@@ -285,8 +256,6 @@ class DataSet(TFRData, Nomear):
             indice.extend((np.array(indices_group)[np.arange(start_index[i], len(indices_group)).astype(int)]).astype(int))
 
       indices_group = indices
-
-
 
     datasets = []
 
