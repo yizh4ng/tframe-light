@@ -28,8 +28,6 @@ class TrainerConfigs(object):
     False, 'Whether to evaluate test set after training')
 
   val_batch_size = Flag.integer(None, 'Batch size in batch validation')
-  eval_batch_size = Flag.integer(None, 'Batch size in batch evaluation')
-  eval_num_steps = Flag.integer(None, 'Step number in batch evaluation')
 
   updates_per_round = Flag.integer(None, 'Number of updates per round')
 
