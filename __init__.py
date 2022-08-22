@@ -27,10 +27,8 @@ from .utils import local
 from tframe.data.dataset import DataSet
 
 # from .trainers.smartrainer import SmartTrainerHub as DefaultHub
-# from .configs.trainerhub import TrainerHub as DefaultHub
-from .configs.config_base import Config as DefaultHub
-# Disable global hub
-# hub = DefaultHub()
+from .configs.trainerhub import TrainerHub as DefaultHub
+# from .configs.config_base import Config as DefaultHub
 
 def set_random_seed(seed=26):
   np.random.seed(seed)
