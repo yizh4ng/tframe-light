@@ -195,25 +195,21 @@ class DataAgent(object):
     raise NotImplementedError
 
   @classmethod
-  def load(cls, data_dir, train_size, validate_size, test_size,
+  def load(cls, data_dir, validate_size, test_size,
            over_classes, **kwargs):
     """Load data"""
     data_set = cls.load_as_tframe_data(data_dir)
     return cls._split_and_return(
-      data_set, train_size, validate_size, test_size, over_classes=over_classes)
+      data_set, validate_size, test_size)
 
   @classmethod
-  def _split_and_return(cls, data_set, train_size, validate_size, test_size,
-                        over_classes=False):
+  def _split_and_return(cls, data_set, validate_size, test_size):
     from tframe.data.dataset import DataSet
     assert isinstance(data_set, DataSet)
-    names, sizes = [], []
-    for name, size in zip(['Train Set', 'Validation Set', 'Test Set'],
-                          [train_size, validate_size, test_size]):
-      if size == 0: continue
-      names.append(name)
-      sizes.append(size)
-    data_sets = data_set.split(*sizes, over_classes=over_classes, names=names)
+
+    data_sets = data_set.split((validate_size, test_size), names=['validation',
+                                                                  'test',
+                                                                  'train'])
     # Show data info
     cls._show_data_sets_info(data_sets)
     return data_sets
