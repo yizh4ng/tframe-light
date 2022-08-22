@@ -300,8 +300,8 @@ class DataSet(TFRData, Nomear):
 
   def report(self):
     print(f'Report Dataset Details on {self.name}:')
+    print(f':: Size: {self.size}')
     for key in self.properties.keys():
-
       if isinstance(self.properties[key], (str, int, float)):
         print(f':: {key}: {self.properties[key]}')
       elif isinstance(self.properties[key], (list, tuple, np.ndarray)):
