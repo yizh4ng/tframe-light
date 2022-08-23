@@ -4,6 +4,7 @@ from .model import Model
 from tframe.utils.maths.confusion_matrix import ConfusionMatrix
 from tframe import pedia, DataSet, console
 from lambo.gui.vinci.vinci import DaVinci
+import tensorflow as tf
 
 
 class Classifier(Model):
@@ -94,10 +95,8 @@ class Classifier(Model):
     activation_maximization = ActivationMaximization(self.keras_model,
                                                      model_modifier=ReplaceToLinear(),
                                                      clone=True)
-
     def _show_activation_maximum(x, title):
       from tf_keras_vis.utils.scores import CategoricalScore
-      from matplotlib import pyplot as plt
       from tf_keras_vis.activation_maximization.callbacks import Progress
 
       score = CategoricalScore(x)
@@ -109,3 +108,62 @@ class Classifier(Model):
     da.add_plotter(_show_activation_maximum)
     da.show()
 
+  def show_feature_space(self, dataset:DataSet, batch_size=1000):
+    feature_layer = None
+    assert isinstance(self.keras_model, tf.keras.Model)
+    for layer in self.keras_model.layers:
+      if isinstance(layer, tf.keras.layers.Flatten):
+        feature_layer = layer
+        break
+    assert feature_layer is not None
+    new_model = tf.keras.Model(inputs=self.keras_model.input,
+                               outputs=feature_layer.output)
+    console.show_status('Start reading dataset {}...'.format(dataset.name))
+    features = []
+    for i, batch in enumerate(dataset.gen_batches(batch_size,
+                                                  is_training=False)):
+      features.extend(new_model(batch.features))
+      console.print_progress(i, dataset.get_round_length(batch_size,
+                                                         training=False))
+    console.clear_line()
+    console.show_status('Finish reading dataset {}.'.format(dataset.name))
+    labels = np.argmax(dataset.targets, axis=-1)
+
+    from sklearn.manifold import TSNE
+    console.show_status('Start fitting TSNE...')
+    tsne = TSNE(n_components=3).fit_transform(features)
+    console.show_status('Finish fitting TSNE...')
+
+    def scale_to_01_range(x):
+
+      value_range = (np.max(x) - np.min(x))
+      starts_from_zero = x - np.min(x)
+      return starts_from_zero / value_range
+
+    tx = tsne[:, 0]
+    ty = tsne[:, 1]
+    tz = tsne[:, 2]
+
+    # tx = scale_to_01_range(tx)
+    # ty = scale_to_01_range(ty)
+    # tz = scale_to_01_range(tz)
+
+    classes = dataset.properties['CLASSES']
+    colors = [[(np.random.uniform(0.2, 1), np.random.uniform(0.2, 1),
+                      np.random.uniform(0.2, 1))] for _ in classes]
+
+    from matplotlib import pyplot as plt
+    fig = plt.figure()
+    ax = plt.axes(projection='3d')
+    for idx, c in enumerate(colors):
+      indices = [i for i, l in enumerate(labels) if idx == l]
+      current_tx = np.take(tx, indices)
+      current_ty = np.take(ty, indices)
+      current_tz = np.take(tz, indices)
+      ax.scatter3D(current_tx, current_ty, current_tz,
+                   c=colors[idx] * len(current_tx),
+                   label=classes[idx])
+    fig.tight_layout()
+    fig.subplots_adjust(right=0.8)
+    ax.legend(loc='center left', bbox_to_anchor=(1.07, 0.5))
+    plt.show()
