@@ -6,15 +6,13 @@ import numpy as np
 
 from tframe import checker
 from tframe import pedia
-# from tframe import hub
 
-from tframe.core.nomear import Nomear
 from tframe.utils import misc
 
 from tframe.data.base_classes import TFRData
 
 
-class DataSet(TFRData, Nomear):
+class DataSet(TFRData):
 
   EXTENSION = 'tfd'
 
@@ -37,15 +35,7 @@ class DataSet(TFRData, Nomear):
     self.targets = targets
     self.properties.update(kwargs)
 
-    self.is_rnn_input = is_rnn_input
-    self.active_length = None
-    self.should_reset_state = False
-    self.reset_batch_indices = None
-    self.reset_values = None
-    self.active_indices = None
 
-    # Sanity checks
-    self._check_data()
 
     # Indices for generating batches
     self._indices_for_training = np.array(list(range(self.size)))
@@ -53,17 +43,6 @@ class DataSet(TFRData, Nomear):
 
   # region : Properties
 
-  @property
-  def target_is_onehot(self):
-    if not isinstance(self.targets, np.ndarray): return False
-    if not len(self.targets.shape) == 2: return False
-    return self.targets.shape[1] == self.num_classes
-
-  @property
-  def gather_indices(self):
-    assert isinstance(self.active_length, (list, tuple))
-    return [[i, al - 1] for i, al in enumerate(self.active_length)]
-  
   @property
   def features(self): return self.data_dict.get(self.FEATURES, None)
 
@@ -83,61 +62,14 @@ class DataSet(TFRData, Nomear):
       else: raise TypeError('!! Unsupported target type {}'.format(type(val)))
 
   @property
-  def dense_labels(self):
-    if self.DENSE_LABELS in self.data_dict:
-      return self.data_dict[self.DENSE_LABELS]
-    if self.num_classes is None: raise AssertionError(
-      '!! # classes should be known for getting dense labels')
-    # Try to convert dense labels from targets
-    targets = self.targets
-    # Handle sequence summary situation
-    if isinstance(targets, (list, tuple)):
-      targets = np.concatenate(targets, axis=0)
-    dense_labels = misc.convert_to_dense_labels(targets)
-    self.dense_labels = dense_labels
-    return dense_labels
-
-  @dense_labels.setter
-  def dense_labels(self, val):
-    self.data_dict[self.DENSE_LABELS] = val
-
-  @property
-  def n_to_one(self):
-    return self.properties.get('n_to_one', False)
-
-  @property
   def representative(self):
     array = list(self.data_dict.values())[0]
     assert isinstance(array, np.ndarray)
-    assert len(array.shape) > 2 if self.is_rnn_input else 1
     return array
-
-  @property
-  def should_partially_reset_state(self):
-    return self.reset_batch_indices is not None
-
-  @property
-  def structure(self): return [1]
 
   @property
   def size(self): return len(self.representative)
 
-  @property
-  def total_steps(self):
-    assert self.is_rnn_input
-    return self.representative.shape[1]
-
-  @property
-  def is_regular_array(self): return True
-
-  @property
-  def stack(self): return self
-
-  @property
-  def as_rnn_batch(self):
-    """Convert a regular array to RNN batch format"""
-    if self.is_rnn_input: return self
-    return self._convert_to_rnn_input(training=False)
 
 
   # region : Overriden Methods
@@ -164,7 +96,7 @@ class DataSet(TFRData, Nomear):
                        updates_per_round=None, shuffle=True):
     # Calculate round_len according to updates_per_round
     if training and updates_per_round and updates_per_round > 0:
-      assert shuffle is True and not self.is_rnn_input
+      assert shuffle is True
       self._set_dynamic_round_len(updates_per_round)
       return updates_per_round
 
@@ -362,25 +294,6 @@ class DataSet(TFRData, Nomear):
     # return indices
     return  indices[selected_indices]
 
-
-  def _check_data(self):
-    """data_dict should be a non-empty dictionary containing regular numpy
-       arrays with the same length"""
-    # Make sure data_dict is a non-empty dictionary
-    if not isinstance(self.data_dict, dict) or len(self.data_dict) == 0:
-      raise TypeError('!! data_dict must be a non-empty dictionary')
-
-    data_length = len(list(self.data_dict.values())[0])
-
-    # Check each item in data_dict
-    for name, array in self.data_dict.items():
-      # Check type and length
-      if not isinstance(array, np.ndarray) or len(array) != data_length:
-        raise ValueError('!! {} should be a numpy array with length {}'.format(
-          name, data_length))
-      # Check sample shape
-      if len(array.shape) == 1:
-        self.data_dict[name] = np.reshape(array, (-1, 1))
 
   def _apply(self, f, data_dict=None):
     """Apply callable method f to all data in data_dict. If data_dict is not
