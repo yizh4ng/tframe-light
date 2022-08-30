@@ -10,6 +10,7 @@ from tframe import pedia
 from tframe.utils import misc
 
 from tframe.data.base_classes import TFRData
+from tframe.utils.misc import convert_to_one_hot
 
 
 class DataSet(TFRData):
@@ -39,12 +40,15 @@ class DataSet(TFRData):
 
     # Indices for generating batches
     self._indices_for_training = np.array(list(range(self.size)))
-    self._ordered_indices = np.array(list(range(self.size)))
 
   # region : Properties
 
   @property
   def features(self): return self.data_dict.get(self.FEATURES, None)
+
+  @property
+  def dense_labels(self):
+    return self.properties['dense_labels']
 
   @features.setter
   def features(self, val):
@@ -121,13 +125,14 @@ class DataSet(TFRData):
     if batch_size == -1: batch_size = self.size
 
     # Generate batches
+    training_indices = np.array(list(range(self.size)))
     if shuffle:
-      self._shuffle_training_indices()
+      np.random.shuffle(training_indices)
     for i in range(round_len):
       if is_training:
-        indices = self._select(i, batch_size, self._indices_for_training)
+        indices = self._select(i, batch_size, training_indices)
       else:
-        indices = self._select(i, batch_size, self._ordered_indices)
+        indices = self._select(i, batch_size, np.array(list(range(self.size))))
       # Get subset
       data_batch = self[indices]
       # Preprocess if necessary
@@ -198,15 +203,16 @@ class DataSet(TFRData):
 
     return datasets
 
-
-
-
   def indices_group(self, key, value):
     assert key in self.properties.keys()
     data = self.properties[key]
 
-    indices = [i for i,x in enumerate(data)
-               if x == value]
+    if isinstance(value, (list, tuple)):
+      indices = [i for i,x in enumerate(data)
+                 if x in value]
+    else:
+      indices = [i for i,x in enumerate(data)
+                 if x == value]
     return indices
 
   def indices_groups(self, key):
@@ -245,7 +251,21 @@ class DataSet(TFRData):
       else:
         print(f'unknown type {type(self.properties[key])} for {key}.')
 
+  def set_classification_target(self, key):
+    assert key in self.properties.keys()
+    data = self.properties[key]
+    targets_set = list(set(data))
+    self.properties['CLASSES'] = targets_set
+    self.properties['NUM_CLASSES'] = len(targets_set)
 
+    labels = []
+    for i in data:
+      label = targets_set.index(i)
+      labels.append(label)
+    labels = np.array(labels)
+    self.properties['dense_labels'] = labels
+    self.data_dict['targets'] = \
+      convert_to_one_hot(labels, self.properties['NUM_CLASSES'])
 
   def split_k_fold(self, K: int, i: int):
     # Sanity check
@@ -325,11 +345,11 @@ class DataSet(TFRData):
 
 
 
-  def _shuffle_training_indices(self):
-    # indices = list(range(len(self.features)))
-    indices = list(range(self.size))
-    np.random.shuffle(indices)
-    self._indices_for_training = np.array(indices)
+  # def _shuffle_training_indices(self):
+  #   # indices = list(range(len(self.features)))
+  #   indices = list(range(self.size))
+  #   np.random.shuffle(indices)
+  #   self._indices_for_training = np.array(indices)
 
   def _set_dynamic_round_len(self, val):
     # To be compatible with old version
