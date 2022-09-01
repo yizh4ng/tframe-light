@@ -55,7 +55,7 @@ class Classifier(Model):
     ## Since v0.6.0, calling `normalize()` is NOT necessary.
     # cam = normalize(cam)
 
-    plt.imshow(img)
+    # plt.imshow(img)
     heatmap = np.uint8(cm.jet(cam[0])[..., :3] * 255)
     plt.imshow(heatmap, cmap='jet', alpha=0.5)  # overlay
 
