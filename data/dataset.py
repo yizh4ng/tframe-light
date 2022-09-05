@@ -255,6 +255,7 @@ class DataSet(TFRData):
     assert key in self.properties.keys()
     data = self.properties[key]
     targets_set = list(set(data))
+    targets_set.sort()
     self.properties['CLASSES'] = targets_set
     self.properties['NUM_CLASSES'] = len(targets_set)
 
