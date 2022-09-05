@@ -56,37 +56,53 @@ class Classifier(Model):
     # cam = normalize(cam)
 
     # plt.imshow(img)
-    heatmap = np.uint8(cm.jet(cam[0])[..., :3] * 255)
-    plt.imshow(heatmap, cmap='jet', alpha=0.5)  # overlay
+    heatmap = cam[0]
+    # heatmap = np.uint8(cm.jet(cam[0])[..., :3] * 255)
+    # plt.imshow(heatmap, cmap='jet', alpha=0.5)  # overlay
+    return heatmap
 
   def show_heatmaps_on_dataset(self, data_set:DataSet):
     from tf_keras_vis.gradcam_plus_plus import GradcamPlusPlus
+    from tf_keras_vis.saliency import Saliency
     from tf_keras_vis.utils.model_modifiers import ReplaceToLinear
+    from tf_keras_vis.utils.scores import CategoricalScore
 
     da = DaVinci()
     da.objects = data_set
 
     # Create GradCAM++ object
-    da.gradcam = GradcamPlusPlus(self.keras_model,
+    gradcam = GradcamPlusPlus(self.keras_model,
                               model_modifier=ReplaceToLinear(),
                               clone=True)
+    saliency = Saliency(self.keras_model,
+                        model_modifier=ReplaceToLinear(),
+                        clone=True)
 
     def show_raw(x: DataSet):
-      da.imshow(x.features[0], da.axes)
+      da.imshow_pro(x.features[0], title=x.properties['CLASSES'][np.where(x.targets[0])[0][0]])
 
     def show_heatmaps(x: DataSet):
-      self.show_heatmap(da.gradcam, x.features[0], np.where(x.targets[0])[0][0])
+      heatmap = self.show_heatmap(gradcam, x.features[0], np.where(x.targets[0])[0][0])
+      da.imshow_pro(heatmap, title='Target: ' + x.properties['CLASSES'][np.where(x.targets[0])[0][0]]
+                               + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
+
+    def show_sliency(x: DataSet):
+      da.imshow_pro(saliency(CategoricalScore(np.where(x.targets[0])[0][0]),
+                         x.features[0],
+                         smooth_samples=20,
+                         smooth_noise=0.20
+                         )[0], title='Target: ' + x.properties['CLASSES'][np.where(x.targets[0])[0][0]]
+                               + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
 
     da.add_plotter(show_raw)
     da.add_plotter(show_heatmaps)
+    da.add_plotter(show_sliency)
     da.show()
 
   def show_activation_maximum(self, dataset):
     labels = np.arange(dataset.num_classes)
     da = DaVinci()
     da.objects = labels
-    da.object_titles = [dataset.properties['CLASSES'][label]
-                        for label in labels]
     da.activation_maximums = [None for _ in labels]
 
     from tf_keras_vis.activation_maximization import ActivationMaximization
@@ -95,7 +111,7 @@ class Classifier(Model):
     activation_maximization = ActivationMaximization(self.keras_model,
                                                      model_modifier=ReplaceToLinear(),
                                                      clone=True)
-    def _show_activation_maximum(x, title):
+    def _show_activation_maximum(x):
       from tf_keras_vis.utils.scores import CategoricalScore
       from tf_keras_vis.activation_maximization.callbacks import Progress
 
@@ -103,7 +119,7 @@ class Classifier(Model):
       if da.activation_maximums[x] is None:
         da.activation_maximums[x] =activation_maximization(score,
                                               callbacks=[Progress()])[0]
-      da.imshow(da.activation_maximums[x], title=title)
+      da.imshow(da.activation_maximums[x], title=dataset.properties['CLASSES'][x])
 
     da.add_plotter(_show_activation_maximum)
     da.show()
