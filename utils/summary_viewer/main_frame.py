@@ -25,8 +25,8 @@ except Exception as e:
 
 class SummaryViewer(Viewer):
   """Summary Viewer for tframe summary"""
-  ROOT_HEIGHT = 565
-  ROOT_WIDTH = 860
+  ROOT_HEIGHT = 1000
+  ROOT_WIDTH = 1500
 
   def __init__(self, summaries=None, **kwargs):
     # Call parent's constructor
