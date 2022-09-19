@@ -72,7 +72,7 @@ class CrossEntropy(Quantity):
 
 class Accraucy(Quantity):
   def __init__(self):
-    super(Accraucy, self).__init__('Accraucy', False)
+    super(Accraucy, self).__init__('Accuracy', False)
 
   def function(self, predictions, targets):
     return metrics.Accuracy()(tf.argmax(predictions, 1),
