@@ -2,7 +2,7 @@ from collections import OrderedDict
 
 from tframe import console
 import tensorflow as tf
-from tframe.data.dataset import TFRData
+from tframe.data.dataset import DataSet
 from tensorflow.keras.optimizers import Adam
 from tframe.core.agent import Agent
 import numpy as np
@@ -58,19 +58,19 @@ class Trainer():
   @property
   def training_set(self):
     if self._training_set is not None:
-      assert isinstance(self._training_set, TFRData)
+      assert isinstance(self._training_set, DataSet)
     return self._training_set
 
   @property
   def validation_set(self):
     if self._validation_set is not None:
-      assert isinstance(self._validation_set, TFRData)
+      assert isinstance(self._validation_set, DataSet)
     return self._validation_set
 
   @property
   def test_set(self):
     if self._test_set is not None:
-      assert isinstance(self._test_set, TFRData)
+      assert isinstance(self._test_set, DataSet)
     return self._test_set
 
   # endregion : Properties
@@ -95,7 +95,7 @@ class Trainer():
   def recover_progress(self, start_time=None):
     # Print progress bar
     if self.th.progress_bar and self.th.round_length is not None:
-      assert isinstance(self._training_set, TFRData)
+      assert isinstance(self._training_set, DataSet)
       progress = self.th.round_progress
       assert progress is not None
       console.print_progress(progress=progress, start_time=start_time)
@@ -273,7 +273,7 @@ class Trainer():
         console.show_status('Saving the model to {}'.format(
           self.agent.ckpt_dir ), symbol='[Saving]')
         self.agent.save_model(self.model.keras_model,
-                                      self.counter, self.model.mark)
+                                      self.counter, 'model')
     else:
       self.patenice -= 1
       if self.patenice < 0:
@@ -353,12 +353,14 @@ class Trainer():
     self.optimizer.apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
     return loss_dict
 
-  def validate_model(self, data_set:TFRData, batch_size=None):
+  def validate_model(self, data_set:DataSet, batch_size=None):
     _loss_dict = {}
     _loss_dict[self.model.loss] = 0
     for metric in self.model.metrics:
       metric_key = metric
       _loss_dict[metric_key] = 0
+
+    batch_size_sum = 0
     for i, data_batch in enumerate(data_set.gen_batches(batch_size,
                                                         is_training=False)):
       target = data_batch.targets
@@ -366,10 +368,16 @@ class Trainer():
       prediction = self.model.keras_model(feature)
       loss = self.model.loss(prediction, target)
 
-      _loss_dict[self.model.loss] += tf.reduce_mean(loss) * data_batch.size / data_set.size
+      _loss_dict[self.model.loss] += tf.reduce_mean(loss) * data_batch.size
       for metric in self.model.metrics:
         _loss_dict[metric] += tf.reduce_mean(metric(prediction, target))\
-                                 * data_batch.size / data_set.size
+                                 * data_batch.size
+      batch_size_sum += data_batch.size
+
+    _loss_dict[self.model.loss] /= batch_size_sum
+    for metric in self.model.metrics:
+      _loss_dict[metric] /= batch_size_sum
+
     # if update_record:
     self.model.loss.try_set_record(_loss_dict[self.model.loss], data_set)
     for metric in self.model.metrics:

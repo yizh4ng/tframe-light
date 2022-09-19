@@ -22,6 +22,9 @@ class Agent(object):
   def root_path(self):
    return self.job_dir
 
+  @property
+  def data_dir(self):
+    return check_path(self._data_dir)
 
   @property
   def log_dir(self):
@@ -59,7 +62,7 @@ class Agent(object):
       ROOT = os.path.dirname(ROOT)
       if sys.path[0] != ROOT: sys.path.insert(0, ROOT)
     self.job_dir = os.path.join(sys.path[dir_depth - 1])
-    self.data_dir = os.path.join(self.job_dir, 'data')
+    self._data_dir = os.path.join(self.job_dir, 'data')
     self.job_dir = os.path.join(self.job_dir, self._model.name)
     console.show_status('Job directory set to `{}`'.format(self.job_dir))
 
@@ -69,7 +72,7 @@ class Agent(object):
     if len(self.saved_model_paths) >= maxmium_number_to_save:
       saved_model_to_delete = self.saved_model_paths.pop(0)
       shutil.rmtree(saved_model_to_delete)
-    file_name = 'model{}-c{}{}'.format(mark, counter, suffix)
+    file_name = 'model-c{}{}'.format(counter, suffix)
 
     path =check_path(self.ckpt_dir, file_name)
 
@@ -92,7 +95,7 @@ class Agent(object):
         if _counter is not None:
           if _counter > counter:
             counter = _counter
-    file_name = 'model{}-c{}{}'.format(mark, counter, suffix)
+    file_name = 'model-c{}{}'.format(counter, suffix)
     path = check_path(self.ckpt_dir, file_name)
     return keras.models.load_model(path), counter
 
