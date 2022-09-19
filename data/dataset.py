@@ -37,10 +37,6 @@ class DataSet(TFRData):
     self.properties.update(kwargs)
 
 
-
-    # Indices for generating batches
-    self._indices_for_training = np.array(list(range(self.size)))
-
   # region : Properties
 
   @property
@@ -163,8 +159,9 @@ class DataSet(TFRData):
     assert np.sum(sizes) < self.size
     assert len(names) == len(sizes) + 1
 
+    thisdataset = self
     if random:
-      self.shuffle()
+      thisdataset = self.shuffle()
 
     indices_group = []
     if over_key is None:
@@ -173,12 +170,12 @@ class DataSet(TFRData):
         indices_group.append(np.arange(start_index, start_index + size))
         start_index += size
 
-      indices_group.append(np.arange(start_index, self.size))
+      indices_group.append(np.arange(start_index, thisdataset.size))
     else:
       #TODO: To splitting equally an imbalanced dataset needs further reformatting
-      indices_groups = self.indices_groups(over_key)
+      indices_groups = thisdataset.indices_groups(over_key)
       num_groups = len(indices_groups)
-      groups_weights = [len(indices_group)/self.size
+      groups_weights = [len(indices_group)/thisdataset.size
                         for indices_group in indices_groups]
       start_index = [0] * num_groups
 
@@ -197,7 +194,7 @@ class DataSet(TFRData):
     datasets = []
 
     for i, indices in enumerate(indices_group):
-      dataset = self[indices]
+      dataset = thisdataset[indices]
       dataset.name = names[i]
       datasets.append(dataset)
 
@@ -243,7 +240,14 @@ class DataSet(TFRData):
       if isinstance(self.properties[key], (str, int, float)):
         print(f':: {key}: {self.properties[key]}')
       elif isinstance(self.properties[key], (list, tuple, np.ndarray)):
+        if not isinstance(self.properties[key][0], (int, float, str)):
+          print(':: Unknown data type {} for key {}.'.format(
+            self.properties[key][0], key))
+          continue
         targets = set(self.properties[key])
+        if len(targets) > 20:
+          print(':: Too many data types for key {}.'.format(key))
+          continue
         print(f':: In the dimenstion of {key}:')
         group = self.sub_groups(key)
         for i, target in enumerate(targets):
@@ -251,22 +255,28 @@ class DataSet(TFRData):
       else:
         print(f'unknown type {type(self.properties[key])} for {key}.')
 
-  def set_classification_target(self, key):
+
+  def set_classification_target(self, key, targets_set=None, func=None):
     assert key in self.properties.keys()
     data = self.properties[key]
-    targets_set = list(set(data))
-    targets_set.sort()
-    self.properties['CLASSES'] = targets_set
+    if func is not None:
+      assert callable(func)
+      data = [func(v) for v in data]
+    if targets_set is None:
+      targets_set = list(set(data))
+      targets_set.sort()
+    self.properties['CLASSES'] = [key + str(target) for target in targets_set]
     self.properties['NUM_CLASSES'] = len(targets_set)
 
     labels = []
     for i in data:
       label = targets_set.index(i)
       labels.append(label)
-    labels = np.array(labels)
+    # labels = np.array(labels)
     self.properties['dense_labels'] = labels
     self.data_dict['targets'] = \
       convert_to_one_hot(labels, self.properties['NUM_CLASSES'])
+
 
   def split_k_fold(self, K: int, i: int):
     # Sanity check
