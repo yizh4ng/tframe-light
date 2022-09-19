@@ -15,6 +15,7 @@ class Classifier(Model):
   # TODO: Can a model evaluate a dataset? Is it that a dataset can evaludate
   #  a model? No, it should be that someone uses a dataset to evaualte a model
   def evaluate(self, data_set:DataSet, batch_size=1000):
+    console.show_info('Evaluate Confusion Matrix on {}'.format(data_set.name))
     probs = []
     for batch in data_set.gen_batches(batch_size, is_training=False):
       probs.extend(self.keras_model(batch.features))
@@ -63,6 +64,7 @@ class Classifier(Model):
 
   def show_heatmaps_on_dataset(self, data_set:DataSet):
     from tf_keras_vis.gradcam_plus_plus import GradcamPlusPlus
+    from tf_keras_vis.gradcam import Gradcam
     from tf_keras_vis.saliency import Saliency
     from tf_keras_vis.utils.model_modifiers import ReplaceToLinear
     from tf_keras_vis.utils.scores import CategoricalScore
@@ -71,7 +73,10 @@ class Classifier(Model):
     da.objects = data_set
 
     # Create GradCAM++ object
-    gradcam = GradcamPlusPlus(self.keras_model,
+    gradcamplusplus = GradcamPlusPlus(self.keras_model,
+                              model_modifier=ReplaceToLinear(),
+                              clone=True)
+    gradcam = Gradcam(self.keras_model,
                               model_modifier=ReplaceToLinear(),
                               clone=True)
     saliency = Saliency(self.keras_model,
@@ -81,10 +86,15 @@ class Classifier(Model):
     def show_raw(x: DataSet):
       da.imshow_pro(x.features[0], title=x.properties['CLASSES'][np.where(x.targets[0])[0][0]])
 
-    def show_heatmaps(x: DataSet):
+    def show_heatmap_gradcam(x: DataSet):
       heatmap = self.show_heatmap(gradcam, x.features[0], np.where(x.targets[0])[0][0])
       da.imshow_pro(heatmap, title='Target: ' + x.properties['CLASSES'][np.where(x.targets[0])[0][0]]
                                + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
+
+    def show_heatmap_gradcamplusplus(x: DataSet):
+      heatmap = self.show_heatmap(gradcamplusplus, x.features[0], np.where(x.targets[0])[0][0])
+      da.imshow_pro(heatmap, title='Target: ' + x.properties['CLASSES'][np.where(x.targets[0])[0][0]]
+                                   + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
 
     def show_sliency(x: DataSet):
       da.imshow_pro(saliency(CategoricalScore(np.where(x.targets[0])[0][0]),
@@ -95,7 +105,8 @@ class Classifier(Model):
                                + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
 
     da.add_plotter(show_raw)
-    da.add_plotter(show_heatmaps)
+    da.add_plotter(show_heatmap_gradcam)
+    da.add_plotter(show_heatmap_gradcamplusplus)
     da.add_plotter(show_sliency)
     da.show()
 
