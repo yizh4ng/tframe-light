@@ -13,8 +13,7 @@ class RegionSize(FeatureExtractor):
     super(RegionSize, self).__init__(name=name)
     self.threshold = threshold
     self.bins = bins
-  def __str__(self):
-    return 'region size above {}'.format(self.threshold)
+    self.default_name = 'region size above {}'.format(self.threshold)
 
   def extract(self, imgs):
     img_size = imgs.shape
@@ -22,15 +21,21 @@ class RegionSize(FeatureExtractor):
     mask[imgs > self.threshold] = 1
     return np.sum(mask, axis=(1, 2)) / np.prod(img_size[1:])
 
+class Variance(FeatureExtractor):
+  def __init__(self, name=None, bins=None):
+    super(Variance, self).__init__(name=name)
+    self.bins = bins
+    self.default_name = 'Variance'
+
+  def extract(self, imgs):
+    return np.std(imgs, axis=(1, 2))
 
 
 class RegionMask(FeatureExtractor):
   def __init__(self, threshold, name=None,):
     super(RegionMask, self).__init__(name=name)
     self.threshold = threshold
-
-  def __str__(self):
-    return 'region mask above {}'.format(self.threshold)
+    self.default_name = 'region mask above {}'.format(self.threshold)
 
   def extract(self, imgs):
     img_size = imgs.shape
@@ -43,9 +48,7 @@ class RegionIntegrate(FeatureExtractor):
     super(RegionIntegrate, self).__init__(name=name)
     self.threshold = threshold
     self.bins = bins
-
-  def __str__(self):
-    return 'region integrate above {}'.format(self.threshold)
+    self.default_name = 'region integrate above {}'.format(self.threshold)
 
   def extract(self, imgs):
     img_size = imgs.shape
@@ -58,12 +61,10 @@ class SphereError(FeatureExtractor):
     super(SphereError, self).__init__(name=name)
     self.threshold = threshold
     self.bins = bins
+    self.default_name = 'sphere error'.format(self.threshold)
     # self.bins = np.linspace(0, 1, 20)
     # if bins is not None:
     #   self.bins = bins
-
-  def __str__(self):
-    return 'sphere error'.format(self.threshold)
 
   def sphereFit(self, x, y, z):
     # A, a, b, C
@@ -79,6 +80,8 @@ class SphereError(FeatureExtractor):
 
   def extract(self, imgs):
     #TODO: Not using for loop
+    if len(imgs.shape) == 4:
+      imgs = np.sum(imgs, axis=-1)
     result = []
     console.show_status('Calculating sphere error...')
     for i, img in enumerate(imgs):
