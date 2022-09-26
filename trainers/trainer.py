@@ -165,6 +165,10 @@ class Trainer():
     if self.th.gather_note:
       self.agent.gather_to_summary()
 
+    if self.th.save_last_model:
+      self.agent.save_model(self.model.keras_model,
+                            self.counter, 'model')
+
     self.model.keras_model, _ = self.agent.load_model(self.model.mark)
     if self.th.probe:
       results_dict = self.probe()
@@ -229,17 +233,7 @@ class Trainer():
   def _inner_loop(self, rnd):
     self.cursor = 0
     self._record_count = 0
-    for i, batch in enumerate(self.training_set.gen_batches(
-        self.th.batch_size, updates_per_round =self.th.updates_per_round,
-        shuffle=self.th.shuffle, is_training=True)):
-
-      self.cursor += 1
-      self.counter += 1
-      # Update model
-      loss_dict = self._update_model(batch)
-
-      if np.mod(self.counter - 1, self.th.print_cycle) == 0:
-        self._print_progress(i, self.training_set._dynamic_round_len, rnd, loss_dict)
+    self._update_model_by_dataset(self.training_set, rnd)
 
     if self.th.validate_train_set:
      loss_dict = self.validate_model(self.training_set,
@@ -248,13 +242,14 @@ class Trainer():
 
      console.show_status('Train set: ' +self._dict_to_string(loss_dict, self.training_set), symbol='[Validation]')
 
-    loss_dict = self.validate_model(self.validation_set,
-                                    batch_size=self.th.val_batch_size)
-    self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='validation')
+    if self.th.validate_val_set:
+      loss_dict = self.validate_model(self.validation_set,
+                                      batch_size=self.th.val_batch_size)
+      self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='validation')
 
-    console.show_status('Validation set: ' + self._dict_to_string(loss_dict,
-                                                                  self.validation_set),
-                        symbol='[Validation]')
+      console.show_status('Validation set: ' + self._dict_to_string(loss_dict,
+                                                                    self.validation_set),
+                          symbol='[Validation]')
 
     if self.th.validate_test_set:
       loss_dict = self.validate_model(self.test_set,
@@ -282,56 +277,9 @@ class Trainer():
         console.show_status('Record does not appear [{}/{}]'.format(
           self.patenice + 1, self.th.patience), symbol='[Patience]')
 
-
-    # Validation
-      # if self._validate_model(rnd) and self._save_model_when_record_appears:
-      #   if not self.is_online: assert np.isscalar(self.th.round_progress)
-      #   self._save_model(inter_cut=True, progress=self.th.round_progress)
-      # Etch (i begins from 0, while rnd begins from 1)
-      # Probe
-      # self._run_probe()
-      # Take notes
-      # self._take_notes_for_export()
-
-
-
   # endregion : During training
 
   # region : After training
-
-  def _end_training(self, rounds):
-    if self.th.progress_bar: console.clear_line()
-    # If this is a hp-tuning task, write record summary
-    if self.th.hp_tuning:
-      assert not self.th.summary
-      self.key_metric.write_record_summary()
-    # Flush summary
-    if self.th.summary or self.th.hp_tuning:
-      self.model.agent.summary_writer.flush()
-    # Take notes
-    if self.is_online:
-      self.model.agent.take_notes(
-        'End  after {} iterations'.format(self.counter))
-    else:
-      total_round = ('' if self.total_rounds is None
-                     else ' ({:.1f} total)'.format(self.total_rounds))
-      self.model.agent.take_notes(
-        'End training after {} rounds{}'.format(rounds, total_round))
-    # Evaluate
-    if self._evaluate is not None:
-      # Load the best model if necessary
-      if self.th.save_model:
-        flag, _, _ = self.model.agent.load()
-        assert flag
-      # Evaluate model
-      self._evaluate(self)
-    # Show RAS if necessary
-    if self.th.lives > 0:
-      ras_info = self.metrics_manager.RAR_string
-      console.show_status(ras_info)
-      self.model.agent.take_notes(ras_info)
-
-
 
   # endregion : After training
 
@@ -339,7 +287,7 @@ class Trainer():
 
   # region : Private Methods
 
-  def _update_model(self, data_batch):
+  def _update_model_by_batch(self, data_batch):
     target = data_batch.targets
     feature = data_batch.features
     loss_dict = {}
@@ -352,6 +300,18 @@ class Trainer():
     grads = tape.gradient(loss, self.model.keras_model.trainable_variables)
     self.optimizer.apply_gradients(zip(grads, self.model.keras_model.trainable_variables))
     return loss_dict
+
+  def _update_model_by_dataset(self, data_set, rnd):
+    for i, batch in enumerate(data_set.gen_batches(
+        self.th.batch_size, updates_per_round =self.th.updates_per_round,
+        shuffle=self.th.shuffle, is_training=True)):
+
+      self.cursor += 1
+      self.counter += 1
+      # Update model
+      loss_dict = self._update_model_by_batch(batch)
+      if np.mod(self.counter - 1, self.th.print_cycle) == 0:
+        self._print_progress(i, data_set._dynamic_round_len, rnd, loss_dict)
 
   def validate_model(self, data_set:DataSet, batch_size=None):
     _loss_dict = {}
