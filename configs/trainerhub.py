@@ -46,6 +46,8 @@ class TrainerHub(Config):
     20, 'Max length of historical statistics buffer length')
   validate_train_set = Flag.boolean(
     False, 'Whether to validate train set in trainer._validate_model')
+  validate_val_set = Flag.boolean(
+    True, 'Whether to validate train set in trainer._validate_model')
   validate_test_set = Flag.boolean(
     False, 'Whether to test train set in trainer._validate_model')
   terminal_threshold = Flag.float(0., 'Terminal threshold')
