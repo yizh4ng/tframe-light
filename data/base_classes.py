@@ -137,8 +137,8 @@ class TFRData(object):
       self.properties.pop(self.CASCADED_BATCH_PREPROCESSOR)
 
   def save(self, filename):
-    if filename.split('.')[-1] != self.EXTENSION:
-      filename += '.{}'.format(self.EXTENSION)
+    # if filename.split('.')[-1] != self.EXTENSION:
+    #   filename += '.{}'.format(self.EXTENSION)
     with open(local.check_path(filename, is_file_path=True), 'wb') as output:
       pickle.dump(self, output, pickle.HIGHEST_PROTOCOL)
 
