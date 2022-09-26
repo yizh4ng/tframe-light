@@ -228,10 +228,18 @@ class DataSet(TFRData):
     indices_groups = self.indices_groups(key)
     return [self[indices] for indices in indices_groups]
 
-  def sub_group(self, value, key):
+  def sub_group(self, key, value):
     assert key in self.properties.keys()
-    indices = self.indices_group(value, key)
+    indices = self.indices_group(key, value)
     return self[indices]
+
+  def sample_balanced_dataset(self, key):
+    indice_groups = self.indices_groups(key)
+    num_groups = len(indice_groups)
+    selected_indices = []
+    for i in range(self.size):
+      selected_indices.append(np.random.choice(indice_groups[i % num_groups]))
+    return self[selected_indices]
 
   def report(self):
     print(f'Report Dataset Details on {self.name}:')
@@ -240,9 +248,10 @@ class DataSet(TFRData):
       if isinstance(self.properties[key], (str, int, float)):
         print(f':: {key}: {self.properties[key]}')
       elif isinstance(self.properties[key], (list, tuple, np.ndarray)):
-        if not isinstance(self.properties[key][0], (int, float, str)):
+        if not isinstance(self.properties[key][0], (int, float, str, np.uint8,
+                                                    np.int32)):
           print(':: Unknown data type {} for key {}.'.format(
-            self.properties[key][0], key))
+            type(self.properties[key][0]).__name__, key))
           continue
         targets = set(self.properties[key])
         if len(targets) > 20:
@@ -262,10 +271,11 @@ class DataSet(TFRData):
     if func is not None:
       assert callable(func)
       data = [func(v) for v in data]
+      self.properties[key] = data
     if targets_set is None:
       targets_set = list(set(data))
       targets_set.sort()
-    self.properties['CLASSES'] = [key + str(target) for target in targets_set]
+    self.properties['CLASSES'] = [key + ':' + str(target) for target in targets_set]
     self.properties['NUM_CLASSES'] = len(targets_set)
 
     labels = []
