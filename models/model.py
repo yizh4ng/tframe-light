@@ -48,8 +48,10 @@ class Model(object):
     self.keras_model = keras.Model(inputs=input, outputs=output,
                                    name=self.net.name)
 
-  def show_feauture_maps(self, dataset:DataSet):
+  def show_feauture_maps(self, dataset:DataSet, class_key=None):
     assert isinstance(self.keras_model, tf.keras.Model)
+    da = DaVinci()
+
     feature_maps = []
     titles = []
     for layer in self.keras_model.layers:
@@ -60,27 +62,37 @@ class Model(object):
             tf.reduce_sum(
               tf.slice(
                 layer.output, [0,0,0,i], [-1,-1,-1,1]),
-              axis=(0, -1))
+              axis=(-1))
           )
           titles.append('{} {}'.format(layer.name, i))
+        da.register_bookmarks(len(feature_maps))
       # dealing with dense layers
       elif len(layer.output.shape) == 2:
-        feature_maps.append(layer.output)
+        feature_maps.append(tf.expand_dims(layer.output, -1))
         titles.append('{}'.format(layer.name))
+        da.register_bookmarks(len(feature_maps))
       else:
         console.show_status(
           'Unknow layer types {} or shapes {}'.format(type(layer),
                                                       layer.output.shape))
-    da = DaVinci()
+
     da.objects = dataset.features
 
     model_temp = tf.keras.Model(inputs=self.keras_model.input,
                                 outputs=feature_maps)
 
-    def _show_feature_map(x, feature_index):
-      da.imshow(model_temp(np.expand_dims(x, 0))[feature_index], title=titles[feature_index])
+    outputs = model_temp(dataset.features)
+    da.objects = outputs
+    #object_cursor for deep learning model layers, layer_curosr for data index
 
-    da.add_plotter(da.imshow)
-    for i in range(len(feature_maps)):
+    def _show_feature_map(x, data_index):
+      title = titles[da.object_cursor]
+      if class_key is not None:
+        title += ' {}'.format(dataset.properties[class_key][data_index])
+
+      da.imshow(x[data_index], title=title)
+
+    # da.add_plotter(show_raw)
+    for i in range(len(dataset)):
       da.add_plotter(lambda x, _i = i: _show_feature_map(x, _i))
     da.show()
