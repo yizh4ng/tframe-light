@@ -88,21 +88,27 @@ class Classifier(Model):
 
     def show_heatmap_gradcam(x: DataSet):
       heatmap = self.show_heatmap(gradcam, x.features[0], np.where(x.targets[0])[0][0])
-      da.imshow_pro(heatmap, title='Target: ' + x.properties['CLASSES'][np.where(x.targets[0])[0][0]]
-                               + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
+      logits = self.keras_model(x.features)[0]
+      confidence = (np.exp(logits)/np.sum(np.exp(logits)))[np.where(x.targets[0])][0]
+      da.imshow_pro(heatmap, title='Prediction: '+x.properties['CLASSES'][np.argmax(logits)]
+                                   +' Confidence: {:.2f}'.format(confidence))
 
     def show_heatmap_gradcamplusplus(x: DataSet):
       heatmap = self.show_heatmap(gradcamplusplus, x.features[0], np.where(x.targets[0])[0][0])
-      da.imshow_pro(heatmap, title='Target: ' + x.properties['CLASSES'][np.where(x.targets[0])[0][0]]
-                                   + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
+      logits = self.keras_model(x.features)[0]
+      confidence = (np.exp(logits)/np.sum(np.exp(logits)))[np.where(x.targets[0])][0]
+      da.imshow_pro(heatmap, title='Prediction: '+x.properties['CLASSES'][np.argmax(logits)]
+                                   +' Confidence: {:.2f}'.format(confidence))
 
     def show_sliency(x: DataSet):
+      logits = self.keras_model(x.features)[0]
+      confidence = (np.exp(logits)/np.sum(np.exp(logits)))[np.where(x.targets[0])][0]
       da.imshow_pro(saliency(CategoricalScore(np.where(x.targets[0])[0][0]),
                          x.features[0],
                          smooth_samples=20,
                          smooth_noise=0.20
-                         )[0], title='Target: ' + x.properties['CLASSES'][np.where(x.targets[0])[0][0]]
-                               + ' Prediction: '+x.properties['CLASSES'][np.argmax(self.keras_model(x.features)[0])])
+                         )[0], title='Prediction: '+x.properties['CLASSES'][np.argmax(logits)]
+                                   +' Confidence: {:.2f}'.format(confidence))
 
     da.add_plotter(show_raw)
     da.add_plotter(show_heatmap_gradcam)
