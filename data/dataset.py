@@ -102,7 +102,10 @@ class DataSet(TFRData):
 
     # Calculate round_len according to batch_size and num_steps
     assert isinstance(batch_size, int) and isinstance(training, bool)
-    if batch_size < 0: batch_size = self.size
+    if batch_size < 0:
+      round_len = 1
+      if training: self._set_dynamic_round_len(round_len)
+      return round_len
 
     elif num_steps is None:
       round_len = np.ceil(self.size / batch_size)
