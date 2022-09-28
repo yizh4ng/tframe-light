@@ -11,11 +11,11 @@ def centralize(features):
   return features - mu
 
 def normalize(features):
-  x = features
+  x = centralize(features)
   assert len(x.shape) == 4
   shape = [len(x), 1, 1, x.shape[3]]
   sigma = np.std(x, axis=(1, 2)).reshape(shape)
-  return  centralize(features) / sigma
+  return  x / sigma
 
 def rotagram(features, verbose=False):
   assert len(features.shape) == 4
