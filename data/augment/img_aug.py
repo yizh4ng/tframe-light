@@ -18,8 +18,8 @@ def image_augmentation_processor(aug_config,
   if not is_training or aug_config is None: return data_batch
   # Parse augmentation setting
   assert isinstance(aug_config, str)
-  if aug_config in ('-', 'x'): return data_batch
-  configs = [Parser.parse(s) for s in aug_config.split('|')]
+  if aug_config in ('x'): return data_batch
+  configs = [Parser.parse(s) for s in aug_config.split('-')]
   if len(configs) == 0: return data_batch
 
   # Apply each method according to configs
@@ -27,6 +27,7 @@ def image_augmentation_processor(aug_config,
     # Find method
     if cfg.name == 'rotate': method = _rotate
     elif cfg.name == 'flip': method = _flip
+    elif cfg.name == 'shake': method = _shake
     else: raise KeyError('!! Unknown augmentation option {}'.format(cfg.name))
     # Do augmentation
     if proceed_target:
@@ -80,6 +81,31 @@ def _flip(x: np.ndarray, horizontal=True, vertical=True, p=0.5,
   if vertical: _rand_flip(1)
 
   if y is not None: return x, y
+  return x
+
+def _shake(x, shake_amplitude=0.25):
+  assert len(x.shape) == 4
+  W, H = x.shape[1], x.shape[2]
+  shake_range = (np.array(x.shape[1:3]) * float(shake_amplitude)).astype(int)
+  shake_length = np.random.randint([0,0], shake_range)
+
+  if np.random.choice([True, False]):
+    # right
+    x[:,shake_length[0]:,:,:] = x[:,:W-shake_length[0],:,:]
+    x[:, :shake_length[0],:,:] = 0
+  else:
+    # left
+    x[:, :W-shake_length[0],:,:] = x[:,shake_length[0]:,:,:]
+    x[:,W-shake_length[0]:,:,:] = 0
+
+  if np.random.choice([True, False]):
+    # right
+    x[:,:, shake_length[1]:,:] = x[:,:,:W-shake_length[1],:]
+    x[:,:,:shake_length[1],:] = 0
+  else:
+    # left
+    x[:,:,:W-shake_length[1],:] = x[:,:,shake_length[1]:,:]
+    x[:,:, W-shake_length[1]:,:] = 0
   return x
 
 def alter(data_batch:DataSet, is_training:bool, mode:str):
@@ -162,6 +188,7 @@ if __name__ == '__main__':
   plt.imshow(data_batch.features[0])
   plt.show()
 
-  data_batch = alter(data_batch, is_training=True, mode='lr')
+  # data_batch = alter(data_batch, is_training=True, mode='lr')
+  data_batch = image_augmentation_processor('shake:shake_amplitude=0.5', data_batch, is_training=True)
   plt.imshow(data_batch.features[0])
   plt.show()
