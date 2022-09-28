@@ -35,7 +35,11 @@ class FeatureExtractor(object):
     raise NotImplementedError
 
   def __call__(self, data_set:DataSet, key='features'):
-    data_set.data_dict[self.name] = self.extract(data_set[key])
+    features = self.extract(data_set[key])
+    if key != 'features':
+      self._name = '{} of {}'.format(self.name, key)
+    data_set.data_dict[self.name] = features
+    return features
 
 
   def view(self, data_set:DataSet, key):

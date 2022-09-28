@@ -7,18 +7,22 @@ from .base import FeatureExtractor
 from roma import console
 from tframe.data.dataset import DataSet
 
-# TODO: Reorganize the histogram visualization
+
+
 class RegionSize(FeatureExtractor):
-  def __init__(self, threshold, name=None, bins=None):
+  def __init__(self, low=np.inf, high=-np.inf, name=None, bins=None):
     super(RegionSize, self).__init__(name=name)
-    self.threshold = threshold
+    self.low = low
+    self.high = high
     self.bins = bins
-    self.default_name = 'region size above {}'.format(self.threshold)
+    self.default_name = 'region size above {} below {}.'.format(self.low,
+                                                                self.high)
 
   def extract(self, imgs):
     img_size = imgs.shape
     mask = np.zeros(img_size)
-    mask[imgs > self.threshold] = 1
+    mask[imgs > self.low] = 1
+    mask[imgs < self.high] = 1
     return np.sum(mask, axis=(1, 2)) / np.prod(img_size[1:])
 
 class Variance(FeatureExtractor):
@@ -30,6 +34,29 @@ class Variance(FeatureExtractor):
   def extract(self, imgs):
     return np.std(imgs, axis=(1, 2))
 
+class Maximum(FeatureExtractor):
+  def __init__(self, name=None, bins=None):
+    super(Maximum, self).__init__(name=name)
+    self.bins = bins
+    self.default_name = 'Maximum'
+
+  def extract(self, imgs):
+    return np.max(imgs, axis=(1, 2))
+
+class MaximumGap(FeatureExtractor):
+  def __init__(self, step, name=None, bins=None):
+    super(MaximumGap, self).__init__(name=name)
+    self.bins = bins
+    self.default_name = 'MaximumGap with step {}.'.format(step)
+    self.step = step
+
+  def extract(self, imgs):
+    W, H = imgs.shape[1], imgs.shape[2]
+    step = self.step
+    x_difference = np.abs(imgs[:, step:,:H-step,:] - imgs[:, :W-step,:H-step,:])
+    y_difference = np.abs(imgs[:,:W-step, step:,:] - imgs[:, :W-step, :H-step, :])
+    max_difference = np.maximum(x_difference, y_difference)
+    return np.max(max_difference, axis=(1, 2))
 
 class RegionMask(FeatureExtractor):
   def __init__(self, threshold, name=None,):
@@ -43,17 +70,53 @@ class RegionMask(FeatureExtractor):
     mask[imgs > self.threshold] = 1
     return mask
 
-class RegionIntegrate(FeatureExtractor):
+class Crop(FeatureExtractor):
+  def __init__(self, x_range=None, y_range=None, name=None, bins=None):
+    super(Crop, self).__init__(name=name)
+    self.x_range = x_range
+    self.y_range = y_range
+    self.bins = bins
+    self.default_name = 'Crop region'
+
+  def extract(self, imgs):
+    if self.x_range is not None:
+      x_range = self.x_range
+      assert len(x_range) == 2
+      imgs = imgs[:, x_range[0]: x_range[1],:, :]
+    if self.y_range is not None:
+      y_range = self.y_range
+      assert len(y_range) == 2
+      imgs = imgs[:, :, y_range[0]: y_range[1], :]
+    return imgs
+
+
+class RegionVariance(FeatureExtractor):
   def __init__(self, threshold, name=None, bins=None):
-    super(RegionIntegrate, self).__init__(name=name)
+    super(RegionVariance, self).__init__(name=name)
     self.threshold = threshold
     self.bins = bins
-    self.default_name = 'region integrate above {}'.format(self.threshold)
+    self.default_name = 'region variance above {}'.format(self.threshold)
+
+  def extract(self, imgs):
+    variance = []
+    for img in imgs:
+      variance.append([np.std(img[img > self.threshold])])
+    return np.array(variance)
+
+class RegionIntegrate(FeatureExtractor):
+  def __init__(self, low=np.inf, high=-np.inf, name=None, bins=None):
+    super(RegionIntegrate, self).__init__(name=name)
+    self.low = low
+    self.high = high
+    self.bins = bins
+    self.default_name = 'region integrate from {} to {}'\
+      .format(self.low, self.high)
 
   def extract(self, imgs):
     img_size = imgs.shape
     mask = np.zeros(img_size)
-    mask[imgs > self.threshold] = imgs[imgs > self.threshold]
+    mask[imgs > self.low] = imgs[imgs > self.low]
+    mask[imgs < self.high] = imgs[imgs < self.high]
     return np.sum(mask, axis=(1, 2))
 
 class SphereError(FeatureExtractor):
