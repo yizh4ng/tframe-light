@@ -136,7 +136,7 @@ class Classifier(Model):
       if da.activation_maximums[x] is None:
         da.activation_maximums[x] =activation_maximization(score,
                                               callbacks=[Progress()])[0]
-      da.imshow(da.activation_maximums[x], title=dataset.properties['CLASSES'][x])
+      da.imshow_pro(da.activation_maximums[x], title=dataset.properties['CLASSES'][x])
 
     da.add_plotter(_show_activation_maximum)
     da.show()

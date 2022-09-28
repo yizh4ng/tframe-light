@@ -90,7 +90,7 @@ class Model(object):
       if class_key is not None:
         title += ' {}'.format(dataset.properties[class_key][data_index])
 
-      da.imshow(x[data_index], title=title)
+      da.imshow_pro(x[data_index], title=title)
 
     # da.add_plotter(show_raw)
     for i in range(len(dataset)):
