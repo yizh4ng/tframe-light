@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow import keras
+import tensorflow.keras as keras
 import numpy as np
 from sklearn.cluster import KMeans
 from tframe.utils.misc import convert_to_one_hot, convert_to_dense_labels
@@ -74,8 +74,8 @@ class WeaklySuperviseTrainer(Trainer):
 
             features_space = np.concatenate(features_space, axis=0)
             '''Feature pca'''
-            # console.show_status('Applying PCA to Feature space...')
-            # features_space = self.preprocess_features(features_space, pca=256)
+            console.show_status('Applying PCA to Feature space...')
+            features_space = self.preprocess_features(features_space, pca=120)
 
             '''faiss'''
             # console.show_status('Fitting faiss K-means...')
@@ -146,7 +146,17 @@ class WeaklySuperviseTrainer(Trainer):
 
             # console.show_status('Sampling balanced dataset...')
             # data_set = data_set.sample_balanced_dataset('tentative_labels')
-            data_set.report()
+            # data_set.report()
+
+        assert isinstance(self.model.keras_model, keras.Model)
+        flag = True
+        for i, layer in enumerate(self.model.keras_model.layers):
+            if isinstance(layer, keras.layers.Dense):
+                if flag:
+                    flag = False
+                    continue
+                self.model.reset_weights(i)
+                 
 
         for i, batch in enumerate(data_set.gen_batches(
             self.th.batch_size, updates_per_round =self.th.updates_per_round,
@@ -172,7 +182,7 @@ class WeaklySuperviseTrainer(Trainer):
             for j in range(i, num_classes):
                 target_index = np.sum(
                     np.argwhere(target == i), axis=-1)
-                tentative_target_index = np.sum(np.argwhere(prediction == j), axis=-1)
+                tentative_target_index = np.sum(np.argwhere(np.array(prediction) == j), axis=-1)
 
                 if len(target_index) == 0:
                     index_similarity = 0
