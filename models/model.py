@@ -1,5 +1,5 @@
 import numpy as np
-from tensorflow import keras
+import tensorflow.keras as keras
 import tensorflow as tf
 from tframe import console, DataSet
 from lambo.gui.vinci.vinci import DaVinci
@@ -47,6 +47,23 @@ class Model(object):
     output = self.net(input)
     self.keras_model = keras.Model(inputs=input, outputs=output,
                                    name=self.net.name)
+
+
+  def reset_weights(self, layer_index):
+    assert isinstance(self.keras_model, keras.Model)
+    model = self.keras_model
+    ix = layer_index
+    new_weights = []
+    if hasattr(model.layers[ix], 'kernel_initializer'):
+      weight_initializer = model.layers[ix].kernel_initializer
+      new_weights.append(weight_initializer(
+        model.layers[ix].get_weights()[0].shape))
+    if hasattr(model.layers[ix], 'bias_initializer'):
+      bias_initializer = model.layers[ix].bias_initializer
+      new_weights.append(bias_initializer(
+        model.layers[ix].get_weights()[1].shape))
+
+      model.layers[ix].set_weights(new_weights)
 
   def show_feauture_maps(self, dataset:DataSet, class_key=None):
     assert isinstance(self.keras_model, tf.keras.Model)
