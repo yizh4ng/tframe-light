@@ -91,16 +91,21 @@ class Crop(FeatureExtractor):
 
 
 class RegionVariance(FeatureExtractor):
-  def __init__(self, threshold, name=None, bins=None):
+  def __init__(self, low=np.inf, high=-np.inf, name=None, bins=None):
     super(RegionVariance, self).__init__(name=name)
-    self.threshold = threshold
+    self.low = low
+    self.high = high
     self.bins = bins
-    self.default_name = 'region variance above {}'.format(self.threshold)
+    self.default_name = 'region variance above {} and below'.format(self.low,
+                                                                    self.high)
 
   def extract(self, imgs):
     variance = []
     for img in imgs:
-      variance.append([np.std(img[img > self.threshold])])
+      _img = np.zeros(img.shape)
+      _img[img > self.low] = img[img > self.low]
+      _img[img < self.high] = img[img < self.high]
+      variance.append([np.std(_img)])
     return np.array(variance)
 
 class RegionIntegrate(FeatureExtractor):
