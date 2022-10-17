@@ -84,12 +84,6 @@ class TFRData(object):
     self.properties[self.LENGTH_CALCULATOR] = val
 
   @property
-  def groups(self):
-    val = self.properties[self.GROUPS]
-    assert isinstance(val, list) and len(val) == self.num_classes
-    return val
-
-  @property
   def num_classes(self):
     assert isinstance(self.properties, dict)
     return self.properties.get(self.NUM_CLASSES, None)
