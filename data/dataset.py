@@ -129,7 +129,10 @@ class DataSet(TFRData):
       np.random.shuffle(training_indices)
     for i in range(round_len):
       if is_training:
-        indices = self._select(i, batch_size, training_indices)
+        if updates_per_round is None:
+          indices = self._select(i, batch_size, training_indices)
+        else:
+          indices = list(np.random.randint(0, self.size, batch_size))
       else:
         indices = self._select(i, batch_size, np.array(list(range(self.size))))
       # Get subset
