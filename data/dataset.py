@@ -157,13 +157,37 @@ class DataSet(TFRData):
     np.random.shuffle(indices)
     return self[indices]
 
-  def split(self, sizes, names, random=False, over_key=None):
+  def split_by_str(self, split_str, name=None, random=False, over_key=None):
+    assert ':' in split_str and len(split_str.split(':')) == 2
+    def _parse(num:str):
+      try:
+        float(num)
+        return float(num)
+      except ValueError:
+        return int(num)
+    start_index, end_index = split_str.split(':')
+    start_index = 0 if start_index == '' else _parse(start_index)
+    end_index = 1 if end_index == '' else _parse(end_index)
+    if start_index == 0 and end_index == 1:
+      return self
+    elif start_index == 0 and end_index != 1:
+        return self.split([end_index], [name, None], random, over_key)[0]
+    elif start_index != 0 and end_index == 1:
+      return self.split([start_index], [None, name], random, over_key)[1]
+    elif start_index != 0 and end_index != 1:
+      return self.split([start_index, end_index-start_index],
+                        [None, name, None], random, over_key)[1]
+    else:
+      raise ValueError('Unknown split string {}'.format(split_str))
+
+  def split(self, sizes, names=None, random=False, over_key=None):
     for i, size in enumerate(sizes):
       if 0 < size and size < 1:
-        sizes[i] = size * self.size
+        sizes[i] = int(size * self.size)
 
     assert np.sum(sizes) < self.size
-    assert len(names) == len(sizes) + 1
+    if names is not None:
+      assert len(names) == len(sizes) + 1
 
     thisdataset = self
     if random:
@@ -201,14 +225,17 @@ class DataSet(TFRData):
 
     for i, indices in enumerate(indices_group):
       dataset = thisdataset[indices]
-      dataset.name = names[i]
+      if names is not None:
+        dataset.name = names[i]
       datasets.append(dataset)
 
     return datasets
 
-  def indices_group(self, key, value):
+  def indices_group(self, key, value, func=None):
     assert key in self.properties.keys()
     data = self.properties[key]
+    if func is not None:
+      data = [func(_data) for _data in data ]
 
     if isinstance(value, (list, tuple)):
       indices = [i for i,x in enumerate(data)
@@ -234,9 +261,9 @@ class DataSet(TFRData):
     indices_groups = self.indices_groups(key)
     return [self[indices] for indices in indices_groups]
 
-  def sub_group(self, key, value):
+  def sub_group(self, key, value, func=None):
     assert key in self.properties.keys()
-    indices = self.indices_group(key, value)
+    indices = self.indices_group(key, value, func=func)
     return self[indices]
 
   def sample_balanced_dataset(self, key):
