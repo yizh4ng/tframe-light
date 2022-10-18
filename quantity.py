@@ -40,6 +40,36 @@ class Quantity():
     result = self.function(predictions, targets)
     return result
 
+  def __add__(self, other_quantity):
+    assert isinstance(other_quantity, Quantity)
+    assert self.smaller_is_better == other_quantity._smaller_is_better
+    new_quantity = Quantity(name=', '.join([self.name + other_quantity.name]),
+                            smaller_is_better=self.smaller_is_better)
+    def new_function(predictions, targets):
+      return self.function(predictions, targets) \
+             + other_quantity(predictions, targets)
+    new_quantity.function = new_function
+    return new_quantity
+
+  def __sub__(self, other_quantity):
+    assert isinstance(other_quantity, Quantity)
+    assert self.smaller_is_better != other_quantity._smaller_is_better
+    new_quantity = Quantity(name=', '.join([self.name + other_quantity.name]),
+                            smaller_is_better=self.smaller_is_better)
+    def new_function(predictions, targets):
+      return self.function(predictions, targets) \
+             - other_quantity(predictions, targets)
+    new_quantity.function = new_function
+    return new_quantity
+
+  def __mul__(self, weight):
+    assert isinstance(weight, float)
+    new_quantity = Quantity(name='{} * {}'.format(self.name, weight),
+                            smaller_is_better=self.smaller_is_better)
+    def new_function(predictions, targets):
+      return self.function(predictions, targets) * weight
+    new_quantity.function = new_function
+    return new_quantity
 
   def function(self, predictions, targets):
     raise NotImplementedError
