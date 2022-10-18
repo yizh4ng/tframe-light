@@ -26,6 +26,10 @@ class Agent(object):
   def data_dir(self):
     return check_path(self._data_dir)
 
+  @data_dir.setter
+  def data_dir(self, data_dir):
+    self._data_dir = check_path(data_dir)
+
   @property
   def log_dir(self):
     return check_path(self.root_path, 'logs',
