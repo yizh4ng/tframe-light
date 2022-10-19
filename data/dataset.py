@@ -161,10 +161,14 @@ class DataSet(TFRData):
     assert ':' in split_str and len(split_str.split(':')) == 2
     def _parse(num:str):
       try:
-        float(num)
-        return float(num)
-      except ValueError:
+        int(num)
         return int(num)
+      except ValueError:
+        try:
+          float(num)
+          return float(num)
+        except:
+          raise ValueError
     start_index, end_index = split_str.split(':')
     start_index = 0 if start_index == '' else _parse(start_index)
     end_index = 1 if end_index == '' else _parse(end_index)
@@ -184,7 +188,8 @@ class DataSet(TFRData):
     for i, size in enumerate(sizes):
       if 0 < size and size < 1:
         sizes[i] = int(size * self.size)
-
+      if size < 0:
+        sizes[i] = self.size + size
     assert np.sum(sizes) < self.size
     if names is not None:
       assert len(names) == len(sizes) + 1
