@@ -171,13 +171,7 @@ class Trainer():
 
     self.model.keras_model, _ = self.agent.load_model(self.model.mark)
     if self.th.probe:
-      results_dict = self.probe()
-      for key in list(results_dict.keys()):
-        results_dict['Final_'+key] = results_dict.pop(key)
-      self.agent.save_figures(results_dict)
-      console.show_status(
-        'Final Results saved to {}.'.format(self.agent.snapshot_dir),
-        symbol='[Probe]')
+      self.probe()
 
   # region : During training
 
@@ -192,11 +186,7 @@ class Trainer():
       self.round += 1
       if self.th.probe and rnd % self.th.probe_cycle == 0:
         assert callable(self.probe)
-        results_dict = self.probe()
-        self.agent.save_figures(results_dict)
-        console.show_status(
-          'Results saved to {}.'.format(self.agent.snapshot_dir),
-          symbol='[Probe]')
+        self.probe()
 
       if self.th._stop:
         break
@@ -237,7 +227,7 @@ class Trainer():
 
     if self.th.validate_train_set:
      loss_dict = self.validate_model(self.training_set,
-                                     batch_size=self.th.val_batch_size)
+                                     batch_size=self.th.val_batch_size, update_record=False)
      self.agent.write_summary_from_dict(loss_dict, rnd, name_scope='train')
 
      console.show_status('Train set: ' +self._dict_to_string(loss_dict, self.training_set), symbol='[Validation]')
@@ -313,7 +303,7 @@ class Trainer():
       if np.mod(self.counter - 1, self.th.print_cycle) == 0:
         self._print_progress(i, data_set._dynamic_round_len, rnd, loss_dict)
 
-  def validate_model(self, data_set:DataSet, batch_size=None):
+  def validate_model(self, data_set:DataSet, batch_size=None, update_record=True):
     _loss_dict = {}
     _loss_dict[self.model.loss] = 0
     for metric in self.model.metrics:
@@ -338,10 +328,10 @@ class Trainer():
     for metric in self.model.metrics:
       _loss_dict[metric] /= batch_size_sum
 
-    # if update_record:
-    self.model.loss.try_set_record(_loss_dict[self.model.loss], data_set)
-    for metric in self.model.metrics:
-      metric.try_set_record(_loss_dict[metric], data_set)
+    if update_record:
+      self.model.loss.try_set_record(_loss_dict[self.model.loss], data_set)
+      for metric in self.model.metrics:
+        metric.try_set_record(_loss_dict[metric], data_set)
     return _loss_dict
 
 

@@ -83,13 +83,16 @@ class Agent(object):
     model.save(path)
     self.saved_model_paths.append(path)
 
-  def save_figures(self, figures_dict):
+  def save_figure(self, figure, file_name, clim=None):
     import matplotlib.pyplot as plt
-    for file_name in figures_dict:
-      figure = figures_dict[file_name]
-      save_path = os.path.join(self.snapshot_dir, file_name + '.png')
-      if not os.path.exists(save_path):
-        plt.imsave(save_path, figure)
+    save_path = os.path.join(self.snapshot_dir, file_name + '.png')
+    if not os.path.exists(save_path):
+      plt.imshow(figure)
+      if clim is not None:
+        plt.clim(clim[0], clim[1])
+      plt.colorbar()
+      plt.savefig(save_path)
+      plt.close()
 
   def load_model(self, mark, suffix='.sav'):
     counter = 0
@@ -133,7 +136,7 @@ class Agent(object):
     if name_scope != '':
       suffix = '{}/'.format(name_scope)
 
-    for key in  dict:
+    for key in dict:
       self.write_summary(suffix+key.name, dict[key], step)
 
   def gather_to_summary(self):
