@@ -81,14 +81,12 @@ class MSE(Quantity):
   def function(self, predictions, targets):
     return tf.reduce_mean(tf.square(predictions - targets))
 
-
 class MAE(Quantity):
   def __init__(self):
     super(MAE, self).__init__('MAE', True)
 
   def function(self, predictions, targets):
     return tf.reduce_mean(tf.abs(predictions - targets))
-
 
 class CrossEntropy(Quantity):
   def __init__(self):
@@ -98,7 +96,6 @@ class CrossEntropy(Quantity):
     return tf.compat.v1.nn.softmax_cross_entropy_with_logits_v2(labels=targets,
                                                                 logits=predictions)
     # return tf.losses.CategoricalCrossentropy()(predictions, targets)
-
 
 class Accraucy(Quantity):
   def __init__(self):
@@ -138,3 +135,23 @@ class WMAE(Quantity):
                          axis=reduce_axis)
     deno = tf.reduce_sum(weights, axis=reduce_axis)
     return tf.divide(nume, deno)
+
+class SSIM(Quantity):
+  def __init__(self, max_val=1.0):
+    super(SSIM, self).__init__('SSIM', False)
+    self.max_val = max_val
+
+  def function(self, y_predict, y_true):
+    y_true = tf.cast(y_true,tf.float32)
+    y_predict = tf.cast(y_predict,tf.float32)
+    return tf.image.ssim(y_true, y_predict, max_val=self.max_val)
+
+class PSNR(Quantity):
+  def __init__(self, max_val=1.0):
+    super(PSNR, self).__init__('PSNR', False)
+    self.max_val = max_val
+
+  def function(self, y_predict, y_true):
+    y_true = tf.cast(y_true,tf.float32)
+    y_predict = tf.cast(y_predict,tf.float32)
+    return tf.image.psnr(y_true, y_predict, max_val=self.max_val)
