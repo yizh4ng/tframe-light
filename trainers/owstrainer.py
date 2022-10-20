@@ -1,7 +1,8 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
-from sklearn.cluster import KMeans
+# from sklearn.cluster import KMeans
+from k_means_constrained import KMeansConstrained
 from tframe.utils.misc import convert_to_one_hot, convert_to_dense_labels
 from tframe import console
 from sklearn.decomposition import PCA
@@ -94,7 +95,9 @@ class WeaklySuperviseTrainer(Trainer):
 
             '''k-means'''
             console.show_status('Fitting K-means...')
-            kmeans = KMeans(n_clusters=data_set.properties['NUM_CLASSES'], random_state=0).fit(features_space)
+            kmeans = KMeansConstrained(n_clusters=data_set.properties['NUM_CLASSES'],
+                                       size_min=1000,
+                                       random_state=0).fit(features_space)
 
             labels =  kmeans.labels_
 
