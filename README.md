@@ -11,11 +11,11 @@
 ## The following tframe's functions has been completed in tframe-light
 * Network Searching
 * Gather experiments to the note and visualize them.
-
-## To do list
 * Visualize features map
 * Visualize kernel
 * Visualize heatmap
+
+## To do list
 * RNN, RL and GAN
 * Support both the eager mode and graph mode
 * Code reformatting (Long term)
