@@ -1,5 +1,5 @@
 # tframe-light
- This is a tensorflow 2 wrapper where the ideology is from original [tframe](https://github.com/WilliamRo/tframe)
+ This is a tensorflow 2 wrapper where the ideology is from original [tframe](https://github.com/WilliamRo/tframe).
  
 ## What is the difference?
 * In tframe, layers should be strictly from the Layer classes. In tframe-light, as long as the function is callable, it can be regarded as a layer.
@@ -18,5 +18,5 @@
 ## To do list
 * RNN, RL and GAN
 * Support both the eager mode and graph mode
-* Code reformatting (Long term)
+* Code reformatting
 * Demo codes
