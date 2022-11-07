@@ -302,11 +302,12 @@ class ImageDataAgent(DataAgent):
     if flatten:
       data_set.features = data_set.features.reshape(data_set.size, -1)
     if one_hot:
+      data_set.properties['dense_labels'] = data_set.targets
       data_set.targets = misc.convert_to_one_hot(
         data_set.targets, data_set[data_set.NUM_CLASSES])
 
     return cls._split_and_return(
-      data_set, train_size, validate_size, test_size, over_classes=over_classes)
+      data_set, validate_size, test_size)
 
   @classmethod
   def load_as_tframe_data(cls, data_dir):

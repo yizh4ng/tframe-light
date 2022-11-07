@@ -1,8 +1,8 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 import numpy as np
-# from sklearn.cluster import KMeans
-from k_means_constrained import KMeansConstrained
+from sklearn.cluster import KMeans
+# from k_means_constrained import KMeansConstrained
 from tframe.utils.misc import convert_to_one_hot, convert_to_dense_labels
 from tframe import console
 from sklearn.decomposition import PCA
@@ -75,8 +75,8 @@ class WeaklySuperviseTrainer(Trainer):
 
             features_space = np.concatenate(features_space, axis=0)
             '''Feature pca'''
-            console.show_status('Applying PCA to Feature space...')
-            features_space = self.preprocess_features(features_space, pca=120)
+            # console.show_status('Applying PCA to Feature space...')
+            # features_space = self.preprocess_features(features_space, pca=120)
 
             '''faiss'''
             # console.show_status('Fitting faiss K-means...')
@@ -95,8 +95,11 @@ class WeaklySuperviseTrainer(Trainer):
 
             '''k-means'''
             console.show_status('Fitting K-means...')
-            kmeans = KMeansConstrained(n_clusters=data_set.properties['NUM_CLASSES'],
-                                       size_min=1000,
+            # kmeans = KMeansConstrained(n_clusters=data_set.properties['NUM_CLASSES'],
+            #                            size_min=1000,
+            #                            random_state=0).fit(features_space)
+            kmeans = KMeans(n_clusters=data_set.properties['NUM_CLASSES'],
+                                       # size_min=1000,
                                        random_state=0).fit(features_space)
 
             labels =  kmeans.labels_

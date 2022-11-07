@@ -8,7 +8,7 @@ import numpy as np
 from collections import OrderedDict
 
 from tframe import tf
-
+from tframe import pedia
 from tframe import console
 from tframe.data.base_classes import ImageDataAgent
 

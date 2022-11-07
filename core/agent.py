@@ -11,12 +11,14 @@ import shutil
 
 
 class Agent(object):
-  def __init__(self, model):
+  def __init__(self, mark, task_name, max_num_saved_models=2):
     self.saved_model_paths = []
-    self._model = model
+    self.mark = mark
+    self.task_name = task_name
     # self.config_dir()
     self.summary_writer = None
     self.note = Note()
+    self.max_num_saved_models = max_num_saved_models
 
   @property
   def root_path(self):
@@ -33,18 +35,18 @@ class Agent(object):
   @property
   def log_dir(self):
     return check_path(self.root_path, 'logs',
-                      self._model.mark)
+                      self.mark)
 
   @property
   def ckpt_dir(self):
     return check_path(self.root_path, 'checkpoints',
-                      self._model.mark)
+                      self.mark)
 
 
   @property
   def snapshot_dir(self):
     return check_path(self.root_path, 'snapshot',
-                      self._model.mark)
+                      self.mark)
 
   @property
   def gather_summ_path(self):
@@ -67,16 +69,18 @@ class Agent(object):
       if sys.path[0] != ROOT: sys.path.insert(0, ROOT)
     self.job_dir = os.path.join(sys.path[dir_depth - 1])
     self._data_dir = os.path.join(self.job_dir, 'data')
-    self.job_dir = os.path.join(self.job_dir, self._model.name)
+    self.job_dir = os.path.join(self.job_dir, self.task_name)
     console.show_status('Job directory set to `{}`'.format(self.job_dir))
 
 
-  def save_model(self, model, counter, mark,
-                      maxmium_number_to_save=2, suffix='.sav'):
-    if len(self.saved_model_paths) >= maxmium_number_to_save:
+  def save_model(self, model, counter, mark=None,
+                       suffix='.sav'):
+    if len(self.saved_model_paths) >= self.max_num_saved_models:
       saved_model_to_delete = self.saved_model_paths.pop(0)
       shutil.rmtree(saved_model_to_delete)
     file_name = 'model-c{}{}'.format(counter, suffix)
+    if mark is not None:
+      file_name += '-{}'.format(mark)
 
     path =check_path(self.ckpt_dir, file_name)
 
@@ -94,10 +98,11 @@ class Agent(object):
       plt.savefig(save_path)
       plt.close()
 
-  def load_model(self, mark, suffix='.sav'):
+  def load_model(self, mark=None, suffix='.sav'):
     counter = 0
     for root, dirs, files in os.walk(self.ckpt_dir):
       for dir in dirs:
+        if mark not in dir: continue
         _counter = self.get_model_counter_from_name(dir)
         if _counter is not None:
           if _counter > counter:

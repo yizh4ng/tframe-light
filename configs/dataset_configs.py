@@ -9,8 +9,8 @@ class DataConfigs(object):
   data_config = Flag.string(None, 'Data set config string', is_key=None)
 
   train_size = Flag.integer(0, 'Size of training set')
-  val_size = Flag.integer(0, 'Size of validation set')
-  test_size = Flag.integer(0, 'Size of test set')
+  val_size = Flag.integer(0.1, 'Size of validation set')
+  test_size = Flag.integer(0.1, 'Size of test set')
 
   train_config = Flag.string(None, 'Config string for train_set', is_key=None)
   val_config = Flag.string(None, 'Config string for val_set', is_key=None)
