@@ -6,7 +6,8 @@ from lambo.gui.vinci.vinci import DaVinci
 
 
 class Model(object):
-  def __init__(self,loss, metrics, net, name='DefaultModel'):
+  def __init__(self,loss, metrics, net, postprocess=None,
+               name='DefaultModel'):
     assert callable(loss)
     assert isinstance(metrics, (list, tuple))
     self.loss = loss
@@ -14,6 +15,7 @@ class Model(object):
     self.net = net
     self._mark = None
     self.keras_model = None
+    self.postprocess = postprocess
     self.name = name
 
   @property
@@ -48,6 +50,11 @@ class Model(object):
     self.keras_model = keras.Model(inputs=input, outputs=output,
                                    name=self.net.name)
 
+  def __call__(self, input):
+    output = self.keras_model(input)
+    if self.postprocess is not None:
+      output = self.postprocess(output)
+    return output
 
   def reset_weights(self, layer_index):
     assert isinstance(self.keras_model, keras.Model)

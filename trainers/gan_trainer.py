@@ -37,7 +37,7 @@ class GANTrainer(Trainer):
       self.generator.keras_model, self.counter = self.agent.load_model(
         'gen')
       self.discriminator.keras_model, self.counter = self.agent.load_model(
-        'load')
+        'dis')
       console.show_status(
         'Model loaded from counter {}'.format(self.counter))
     else:
@@ -148,7 +148,7 @@ class GANTrainer(Trainer):
     feature = data_batch.features
     loss_dict = {}
     with tf.GradientTape(persistent=True) as tape:
-      generator_prediction = self.generator.keras_model(feature)
+      generator_prediction = self.generator(feature)
       generator_loss = self.generator.loss(generator_prediction, target)
       loss_dict[self.generator.loss] = generator_loss
 
@@ -165,7 +165,7 @@ class GANTrainer(Trainer):
       _feature = np.array(_feature)
       _target = np.array(_target)
 
-      discriminator_prediction = self.discriminator.keras_model(_feature)
+      discriminator_prediction = self.discriminator(_feature)
       _target = tf.constant(_target, dtype=tf.float32)
 
       discriminator_loss = -0.003 * tf.math.log(
@@ -218,7 +218,7 @@ class GANTrainer(Trainer):
                                                         is_training=False)):
       target = data_batch.targets
       feature = data_batch.features
-      generator_prediction = self.generator.keras_model(feature)
+      generator_prediction = self.generator(feature)
       loss = self.generator.loss(generator_prediction, target)
 
       _loss_dict[self.generator.loss] += tf.reduce_mean(loss) * data_batch.size

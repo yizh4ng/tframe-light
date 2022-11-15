@@ -102,12 +102,14 @@ class Agent(object):
     counter = 0
     for root, dirs, files in os.walk(self.ckpt_dir):
       for dir in dirs:
-        if mark not in dir: continue
+        if mark is not None and mark not in dir: continue
         _counter = self.get_model_counter_from_name(dir)
         if _counter is not None:
           if _counter > counter:
             counter = _counter
     file_name = 'model-c{}{}'.format(counter, suffix)
+    if mark is not None:
+      file_name += '-{}'.format(mark)
     path = check_path(self.ckpt_dir, file_name)
     return keras.models.load_model(path), counter
 

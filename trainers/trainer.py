@@ -282,7 +282,7 @@ class Trainer():
     feature = data_batch.features
     loss_dict = {}
     with tf.GradientTape() as tape:
-      prediction = self.model.keras_model(feature)
+      prediction = self.model(feature)
       loss = self.model.loss(prediction, target)
       loss_dict[self.model.loss] = loss
       for metric in self.model.metrics:
@@ -315,7 +315,7 @@ class Trainer():
                                                         is_training=False)):
       target = data_batch.targets
       feature = data_batch.features
-      prediction = self.model.keras_model(feature)
+      prediction = self.model(feature)
       loss = self.model.loss(prediction, target)
 
       _loss_dict[self.model.loss] += tf.reduce_mean(loss) * data_batch.size

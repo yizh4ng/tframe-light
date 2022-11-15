@@ -7,6 +7,7 @@ class TrainerHub(Config):
      training"""
 
   # region : Class Attributes
+  task_name = Flag.string('Default_task', 'Name of the task')
 
   epoch = Flag.integer(1, 'Epoch number to train', is_key=None)
   max_iterations = Flag.integer(None, 'Max inner iterations')
