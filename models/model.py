@@ -9,8 +9,9 @@ class Model(object):
   def __init__(self,loss, metrics, net, postprocess=None,
                name='DefaultModel'):
     assert callable(loss)
-    assert isinstance(metrics, (list, tuple))
     self.loss = loss
+    if not isinstance(metrics, (list, tuple)):
+      metrics = [metrics]
     self.metrics = metrics
     self.net = net
     self._mark = None

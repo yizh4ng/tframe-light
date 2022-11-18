@@ -36,6 +36,7 @@ class TrainerHub(Config):
     is_key=None)
   save_mode = Flag.enum(SaveMode.ON_RECORD, SaveMode,
                         "Save mode, \in  ['naive', 'on_record']")
+  save_cycle = Flag.integer(0, 'save model cycle')
   warm_up_thres = Flag.integer(1, 'Warm up threshold', is_key=None)
   warm_up = Flag.boolean(False, 'Whether to warm up')
   at_most_save_once_per_round = Flag.integer(False, '...')

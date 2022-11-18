@@ -5,7 +5,7 @@ from __future__ import print_function
 import numpy as np
 from scipy.ndimage import map_coordinates
 
-import tframe as tfr
+import tensorflow as tf
 from tframe.utils.arg_parser import Parser
 from tframe.data.dataset import DataSet
 
@@ -177,6 +177,17 @@ def rotagram(data_batch, is_training):
 
   data_batch.features = np.expand_dims(np.concatenate(new_features, axis=2), -1)
   return data_batch
+
+def color_jitter(data_batch:DataSet, a=0.5, b=0.5, c=0.5):
+  x = data_batch.features
+  x = x + 1
+  x = tf.image.random_brightness(x, a)
+  x = tf.image.random_contrast(x, b, 1)
+  x = tf.image.random_saturation(x, c, 1)
+  x = x - 1
+  data_batch.features = x.numpy()
+  return data_batch
+
 
 if __name__ == '__main__':
   import matplotlib.pyplot as plt
